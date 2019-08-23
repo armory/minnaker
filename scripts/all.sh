@@ -9,16 +9,16 @@ SPINUSER=$(id -u 100 -n)
 # Install k3s
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" sh -
 
+# Scaffold out directories
+sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools}
+sudo chown -R ${SPINUSER} /etc/spinnaker
+
 # Install Metrics server
 sudo -u ${SPINUSER} git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
 sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
 
 # Install Docker (TODO: Decide whether we need to use yum or apt or something else)
 sudo snap install docker
-
-# Scaffold out directories
-sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools}
-sudo chown -R ${SPINUSER} /etc/spinnaker
 
 PUBLIC_IP=$(curl ifconfig.co)
 PRIVATE_IP=$(hostname -i)
@@ -279,3 +279,5 @@ sudo docker run --name armory-halyard --rm \
     -d docker.io/armory/halyard-armory:1.6.4
 
 sudo docker exec -it armory-halyard /home/spinnaker/.hal/start.sh
+
+sudo kubectl get pods -n spinnaker --watch
