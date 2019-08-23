@@ -2,40 +2,32 @@
 set -x
 set -e
 
-# Install k3s
-# curl -sfL https://get.k3s.io | sh -
-# INSTALL_K3S_EXEC=” — no-flannel — no-deploy=servicelb — no-deploy=traefik — node-ip=${IPADDR}” sh -
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" sh -
-
+# TODO paramaterize
 VERSION=2.15.0
-
-# kubectl delete -n kube-system helmcharts traefik
-
-# sudo sed -i 's/server/server --no-deploy traefik/g' /etc/systemd/system/k3s.service
-# sudo systemctl daemon-reload
-# sudo systemctl restart k3s
-
-# Install Docker (TODO: Decide whether we need to use yum or apt or something else)
-sudo snap install docker
-
 SPINUSER=$(id -u 100 -n)
 
-# Scaffold out directories
-sudo mkdir -p /etc/spinnaker/{.hal,.kube,manifests,tools}
-sudo mkdir -p /etc/spinnaker/.hal/.secret
-sudo chown -R ${SPINUSER} /etc/spinnaker
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/version <<-EOF
-${VERSION}
-EOF
+# Install k3s
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" sh -
 
 # Install Metrics server
 sudo -u ${SPINUSER} git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
 sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
 
-# Grab public and private IPs
+# Install Docker (TODO: Decide whether we need to use yum or apt or something else)
+sudo snap install docker
+
+# Scaffold out directories
+sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools}
+sudo chown -R ${SPINUSER} /etc/spinnaker
+
 PUBLIC_IP=$(curl ifconfig.co)
 PRIVATE_IP=$(hostname -i)
+MINIO_PASSWORD=$(openssl rand -base64 32)
+SPINNAKER_PASSWORD=$(openssl rand -base64 32)
+
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/version <<-EOF
+${VERSION}
+EOF
 
 sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/public_ip <<-EOF
 ${PUBLIC_IP}
@@ -45,26 +37,13 @@ sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/private_ip <<-EOF
 ${PRIVATE_IP}
 EOF
 
-sudo -u ${SPINUSER} curl -L https://github.com/armory/spinnaker-tools/releases/download/0.0.6/spinnaker-tools-linux -o /etc/spinnaker/tools/spinnaker-tools
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/minio_password <<-EOF
+${MINIO_PASSWORD}
+EOF
 
-sudo -u ${SPINUSER} chmod +x /etc/spinnaker/tools/spinnaker-tools
-
-# sudo cp /etc/rancher/k3s/k3s.yaml /etc/spinnaker/kubeconfig
-
-sudo /etc/spinnaker/tools/spinnaker-tools create-service-account \
-    -c default \
-    -i /etc/rancher/k3s/k3s.yaml \
-    -o /etc/spinnaker/.kube/localhost-config \
-    -n spinnaker \
-    -s spinnaker-sa
-
-sudo chown ${SPINUSER} /etc/spinnaker/.kube/localhost-config
-
-sudo -u ${SPINUSER} sed "s/localhost/${PRIVATE_IP}/g" /etc/spinnaker/.kube/localhost-config \
-    | sudo -u ${SPINUSER} tee /etc/spinnaker/.kube/config
-
-sudo -u ${SPINUSER} cp -rpv /etc/spinnaker/.kube/config \
-    /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/spinnaker_password <<-EOF
+${SPINNAKER_PASSWORD}
+EOF
 
 sudo -u ${SPINUSER} tee /etc/spinnaker/manifests/minio.yaml <<-'EOF'
 ---
@@ -121,8 +100,9 @@ spec:
       protocol: TCP
   selector:
     app: minio
-#  type: LoadBalancer
 EOF
+
+sudo -u ${SPINUSER} sed -i "s|PASSWORD|${MINIO_PASSWORD}|g" /etc/spinnaker/manifests/minio.yaml
 
 sudo -u ${SPINUSER} tee /etc/spinnaker/manifests/expose-spinnaker.yaml <<-'EOF'
 ---
@@ -164,29 +144,25 @@ spec:
   type: LoadBalancer
 EOF
 
-MINIO_PASSWORD=$(openssl rand -base64 32)
-SPINNAKER_PASSWORD=$(openssl rand -base64 32)
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/minio_password <<-EOF
-${MINIO_PASSWORD}
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
+spinnaker.s3.versioning: false
 EOF
 
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/spinnaker_password <<-EOF
-${SPINNAKER_PASSWORD}
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.authEnabled = true;
 EOF
 
-sudo -u ${SPINUSER} sed -i "s|PASSWORD|${MINIO_PASSWORD}|g" /etc/spinnaker/manifests/minio.yaml
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/gate-local.yml <<-EOF
+security:
+  basicform:
+    enabled: true
+  user:
+    name: admin
+    password: SPINNAKER_PASSWORD
+EOF
 
-
-# Start Halyard (TODO turn into daemon)
-sudo docker run --name armory-halyard --rm \
-    -v /etc/spinnaker/.hal:/home/spinnaker/.hal \
-    -v /etc/spinnaker/.kube:/home/spinnaker/.kube \
-    -d docker.io/armory/halyard-armory:1.6.4
-
-
-##################
-
+sudo -u ${SPINUSER} sed -i "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
+    /etc/spinnaker/.hal/default/profiles/gate-local.yml
 
 sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/config-seed <<-'EOF'
 currentDeployment: default
@@ -236,39 +212,41 @@ EOF
 sudo -u ${SPINUSER} sed -i "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" /etc/spinnaker/.hal/config-seed
 sudo -u ${SPINUSER} sed -i "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/.secret/public_ip)|g" /etc/spinnaker/.hal/config-seed
 
+# Only seed config if it doesn't already exist
 if [[ ! -e /etc/spinnaker/.hal/config ]]; then
   sudo -u ${SPINUSER} cp /etc/spinnaker/.hal/config-seed /etc/spinnaker/.hal/config
 fi
 
-########
+# Set up Kubernetes credentials
+
+sudo -u ${SPINUSER} curl -L https://github.com/armory/spinnaker-tools/releases/download/0.0.6/spinnaker-tools-linux -o /etc/spinnaker/tools/spinnaker-tools
+
+sudo -u ${SPINUSER} chmod +x /etc/spinnaker/tools/spinnaker-tools
+
+sudo /etc/spinnaker/tools/spinnaker-tools create-service-account \
+    -c default \
+    -i /etc/rancher/k3s/k3s.yaml \
+    -o /etc/spinnaker/.kube/localhost-config \
+    -n spinnaker \
+    -s spinnaker-sa
+
+sudo chown ${SPINUSER} /etc/spinnaker/.kube/localhost-config
+
+sudo -u ${SPINUSER} sed "s/localhost/${PRIVATE_IP}/g" /etc/spinnaker/.kube/localhost-config \
+    | sudo -u ${SPINUSER} tee /etc/spinnaker/.kube/config
+
+sudo -u ${SPINUSER} cp -rpv /etc/spinnaker/.kube/config \
+    /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+
+# Install Minio and service
 
 sudo kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker.yaml
 sudo kubectl apply -f /etc/spinnaker/manifests/minio.yaml
 
-########
-
-sudo -u ${SPINUSER} mkdir -p /etc/spinnaker/.hal/default/profiles
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/gate-local.yml <<-EOF
-security:
-  basicform:
-    enabled: true
-  user:
-    name: admin
-    password: SPINNAKER_PASSWORD
-EOF
-
-sudo -u ${SPINUSER} sed -i "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" /etc/spinnaker/.hal/default/profiles/gate-local.yml
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.authEnabled = true;
-EOF
-
+######## Bootstrap
 sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/start.sh <<-'EOF'
 #!/bin/bash
+# Determine port detection method
 if [[ $(ss -h &> /dev/null; echo $?) -eq 0 ]];
 then
   ns_cmd=ss
@@ -276,6 +254,7 @@ else
   ns_cmd=netstat
 fi
 
+# Wait for Spinnaker to start
 while [[ $(${ns_cmd} -plnt | grep 8064 | wc -l) -lt 1 ]];
 do
   echo 'Waiting for Halyard daemon to start';
@@ -292,5 +271,11 @@ cat /home/spinnaker/.hal/.secret/spinnaker_password
 EOF
 
 sudo -u ${SPINUSER} chmod +x /etc/spinnaker/.hal/start.sh
+
+# Start Halyard (TODO turn into daemon)
+sudo docker run --name armory-halyard --rm \
+    -v /etc/spinnaker/.hal:/home/spinnaker/.hal \
+    -v /etc/spinnaker/.kube:/home/spinnaker/.kube \
+    -d docker.io/armory/halyard-armory:1.6.4
 
 sudo docker exec -it armory-halyard /home/spinnaker/.hal/start.sh
