@@ -21,7 +21,7 @@ sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
 sudo snap install docker
 
 PUBLIC_IP=$(curl ifconfig.co)
-PRIVATE_IP=$(hostname -i)
+PRIVATE_IP=$(ip r get 8.8.8.8 | awk 'NR==1{print $NF}')
 MINIO_PASSWORD=$(openssl rand -base64 32)
 SPINNAKER_PASSWORD=$(openssl rand -base64 32)
 
