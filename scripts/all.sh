@@ -235,19 +235,19 @@ EOF
 
 # Todo: Support multiple installation methods (apt, etc.)
 install_git () {
-  set +x
+  set +e
   if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
   then
     snap install git
   else
     sudo apt-get install git -y
   fi
-  set -x
+  set -e
 }
 
 # Todo: Support multiple installation methods (apt, etc.)
 install_docker () {
-  set +x
+  set +e
   if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
   then
     snap install docker
@@ -261,13 +261,11 @@ install_docker () {
         software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     sudo add-apt-repository \
-      "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) \
-      stable"
+      "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     sudo apt-get update
     sudo apt-get install docker-ce docker-ce-cli containerd.io
   fi
-  set -x
+  set -e
 }
 
 ########## Script starts here
