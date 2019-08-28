@@ -286,6 +286,7 @@ install_git
 install_docker
 
 # Install Metrics server
+# TODO: detect existence and skip if existing
 sudo -u ${SPINUSER} git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
 sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
 
@@ -303,7 +304,7 @@ EOF
 fi
 
 # Populate (static) settings-local.js if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js];
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js ]];
 then
 sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
 window.spinnakerSettings.authEnabled = true;
