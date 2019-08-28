@@ -2,50 +2,54 @@
 set -x
 set -e
 
-# TODO paramaterize
-VERSION=2.15.0
-SPINUSER=$(id -u 100 -n)
+##### Functions
+install_k3s () {
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" sh -
+}
 
-# Install k3s
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" sh -
+get_ips () {
+  if [[ ! -f /etc/spinnaker/.hal/private_ip ]]; then
+    echo "Detecting Private IP (and storing in /etc/spinnaker/.hal/private_ip):"
+    ip r get 8.8.8.8 | awk 'NR==1{print $NF}' | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/private_ip
+  else
+    echo "Using existing Private IP from /etc/spinnaker/.hal/private_ip"
+    cat /etc/spinnaker/.hal/private_ip
+  fi
 
-# Scaffold out directories
-sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools}
-sudo chown -R ${SPINUSER} /etc/spinnaker
+  if [[ ! -f /etc/spinnaker/.hal/public_ip ]]; then
+    if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
+      echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in /etc/spinnaker/.hal/public_ip):"
+      curl -sSfL ifconfig.co | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/public_ip
+    else
+      echo "No cloud metadata endpoint detected, using private IP for public IP (and storing in /etc/spinnaker/.hal/public_ip):"
+      sudo -u ${SPINUSER} cp -rp /etc/spinnaker/.hal/private_ip \
+          /etc/spinnaker/.hal/public_ip
+      cat /etc/spinnaker/.hal/public_ip
+    fi
+  else
+    echo "Using existing Private IP from /etc/spinnaker/.hal/public_ip"
+    cat /etc/spinnaker/.hal/public_ip
+  fi
+}
 
-# Install Metrics server
-sudo -u ${SPINUSER} git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
-sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
+generate_passwords () {
+  if [[ ! -f /etc/spinnaker/.hal/.secret/minio_password ]]; then
+    echo "Generating Minio password (/etc/spinnaker/.hal/.secret/minio_password):"
+    openssl rand -base64 32 | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/minio_password
+  else
+    echo "Minio password already exists (/etc/spinnaker/.hal/.secret/minio_password)"
+  fi
 
-# Install Docker (TODO: Decide whether we need to use yum or apt or something else)
-sudo snap install docker
+  if [[ ! -f /etc/spinnaker/.hal/.secret/spinnaker_password ]]; then
+    echo "Generating Spinnaker password (/etc/spinnaker/.hal/.secret/spinnaker_password):"
+    openssl rand -base64 32 | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/spinnaker_password
+  else
+    echo "Spinnaker password already exists (/etc/spinnaker/.hal/.secret/spinnaker_password)"
+  fi
+}
 
-PUBLIC_IP=$(curl ifconfig.co)
-PRIVATE_IP=$(ip r get 8.8.8.8 | awk 'NR==1{print $NF}')
-MINIO_PASSWORD=$(openssl rand -base64 32)
-SPINNAKER_PASSWORD=$(openssl rand -base64 32)
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/version <<-EOF
-${VERSION}
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/public_ip <<-EOF
-${PUBLIC_IP}
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/private_ip <<-EOF
-${PRIVATE_IP}
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/minio_password <<-EOF
-${MINIO_PASSWORD}
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/.secret/spinnaker_password <<-EOF
-${SPINNAKER_PASSWORD}
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/manifests/minio.yaml <<-'EOF'
+print_templates () {
+sudo -u ${SPINUSER} tee /etc/spinnaker/templates/minio.yaml <<-'EOF'
 ---
 apiVersion: v1
 kind: Namespace
@@ -102,69 +106,7 @@ spec:
     app: minio
 EOF
 
-sudo -u ${SPINUSER} sed -i "s|PASSWORD|${MINIO_PASSWORD}|g" /etc/spinnaker/manifests/minio.yaml
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/manifests/expose-spinnaker.yaml <<-'EOF'
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-deck-lb
-  name: spin-deck-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 9000
-  selector:
-    app: spin
-    cluster: spin-deck
-  sessionAffinity: None
-  type: LoadBalancer
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-gate-lb
-  name: spin-gate-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 8084
-    protocol: TCP
-    targetPort: 8084
-  selector:
-    app: spin
-    cluster: spin-gate
-  type: LoadBalancer
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.authEnabled = true;
-EOF
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/gate-local.yml <<-EOF
-security:
-  basicform:
-    enabled: true
-  user:
-    name: admin
-    password: SPINNAKER_PASSWORD
-EOF
-
-sudo -u ${SPINUSER} sed -i "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
-    /etc/spinnaker/.hal/default/profiles/gate-local.yml
-
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/config-seed <<-'EOF'
+sudo -u ${SPINUSER} tee /etc/spinnaker/templates/config-seed <<-'EOF'
 currentDeployment: default
 deploymentConfigurations:
 - name: default
@@ -209,12 +151,165 @@ deploymentConfigurations:
       accounts: []
 EOF
 
-sudo -u ${SPINUSER} sed -i "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" /etc/spinnaker/.hal/config-seed
-sudo -u ${SPINUSER} sed -i "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/.secret/public_ip)|g" /etc/spinnaker/.hal/config-seed
+sudo -u ${SPINUSER} tee /etc/spinnaker/templates/gate-local.yml <<-EOF
+security:
+  basicform:
+    enabled: true
+  user:
+    name: admin
+    password: SPINNAKER_PASSWORD
+EOF
+}
 
-# Only seed config if it doesn't already exist
+print_manifests () {
+sudo -u ${SPINUSER} tee /etc/spinnaker/manifests/expose-spinnaker.yaml <<-'EOF'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spin
+    cluster: spin-deck-lb
+  name: spin-deck-lb
+  namespace: spinnaker
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: spin
+    cluster: spin-deck
+  sessionAffinity: None
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spin
+    cluster: spin-gate-lb
+  name: spin-gate-lb
+  namespace: spinnaker
+spec:
+  ports:
+  - port: 8084
+    protocol: TCP
+    targetPort: 8084
+  selector:
+    app: spin
+    cluster: spin-gate
+  type: LoadBalancer
+EOF
+}
+
+print_bootstrap_script () {
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/start.sh <<-'EOF'
+#!/bin/bash
+# Determine port detection method
+if [[ $(ss -h &> /dev/null; echo $?) -eq 0 ]];
+then
+  ns_cmd=ss
+else
+  ns_cmd=netstat
+fi
+
+# Wait for Spinnaker to start
+while [[ $(${ns_cmd} -plnt | grep 8064 | wc -l) -lt 1 ]];
+do
+  echo 'Waiting for Halyard daemon to start';
+  sleep 2;
+done
+
+VERSION=$(hal version latest -q)
+
+hal config version edit --version ${VERSION}
+sleep 5
+hal deploy apply
+
+cat /home/spinnaker/.hal/public_ip
+echo 'admin'
+cat /home/spinnaker/.hal/.secret/spinnaker_password
+EOF
+}
+
+# Todo: Support multiple installation methods (apt, etc.)
+install_git () {
+  snap install git
+}
+
+# Todo: Support multiple installation methods (apt, etc.)
+install_docker () {
+  snap install docker
+}
+
+########## Script starts here
+# TODO paramaterize
+VERSION=2.15.2
+# Armory Halyard uses 100; OSS Halyard uses 1000
+SPINUSER=$(id -u 100 -n)
+
+# Scaffold out directories
+sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates}
+sudo chown -R ${SPINUSER} /etc/spinnaker
+
+# Install k3s
+install_k3s
+
+# Install git and Docker
+install_git
+install_docker
+
+# Install Metrics server
+sudo -u ${SPINUSER} git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
+sudo kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
+
+get_ips
+generate_passwords
+print_templates
+print_manifests
+
+# Populate (static) front50-local.yaml if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/front50-local.yml ]];
+then
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
+spinnaker.s3.versioning: false
+EOF
+fi
+
+# Populate (static) settings-local.js if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js];
+then
+sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.authEnabled = true;
+EOF
+fi
+
+# Hydrate (dynamic) gate-local.yml with password if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
+then
+  sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
+    /etc/spinnaker/templates/gate-local.yaml \
+    > sudo -u ${SPINUSER} tee  /etc/spinnaker/.hal/default/profiles/gate-local.yml
+fi
+
+# Hydrate (dynamic) config seed with minio password and public IP
+sudo -u ${SPINUSER} sed \
+    -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
+    -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
+    /etc/spinnaker/templates/config-seed > /etc/spinnaker/.hal/config-seed
+
+# Seed config if it doesn't exist
 if [[ ! -e /etc/spinnaker/.hal/config ]]; then
   sudo -u ${SPINUSER} cp /etc/spinnaker/.hal/config-seed /etc/spinnaker/.hal/config
+fi
+
+# Populate minio manifest if it doesn't exist
+if [[ ! -e /etc/spinnaker/manifests/minio.yaml ]];
+then
+  sed "s|PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
+    /etc/spinnaker/templates/minio.yaml \
+    > sudo -u ${SPINUSER} tee /etc/spinnaker/templates/minio.yaml
 fi
 
 # Set up Kubernetes credentials
@@ -244,31 +339,6 @@ sudo kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker.yaml
 sudo kubectl apply -f /etc/spinnaker/manifests/minio.yaml
 
 ######## Bootstrap
-sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/start.sh <<-'EOF'
-#!/bin/bash
-# Determine port detection method
-if [[ $(ss -h &> /dev/null; echo $?) -eq 0 ]];
-then
-  ns_cmd=ss
-else
-  ns_cmd=netstat
-fi
-
-# Wait for Spinnaker to start
-while [[ $(${ns_cmd} -plnt | grep 8064 | wc -l) -lt 1 ]];
-do
-  echo 'Waiting for Halyard daemon to start';
-  sleep 2;
-done
-
-hal config version edit --version $(cat /home/spinnaker/.hal/version)
-sleep 5
-hal deploy apply
-
-cat /home/spinnaker/.hal/.secret/public_ip
-echo 'admin'
-cat /home/spinnaker/.hal/.secret/spinnaker_password
-EOF
 
 sudo -u ${SPINUSER} chmod +x /etc/spinnaker/.hal/start.sh
 
