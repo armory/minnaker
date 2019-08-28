@@ -387,7 +387,7 @@ sudo tee /usr/local/bin/hal <<-'EOF'
 POD_NAME=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
 # echo $POD_NAME
 set -x
-kubectl -n spinnaker exec -it ${POD_NAME} hal $@
+kubectl -n spinnaker exec -it ${POD_NAME} -- hal $@
 EOF
 
 sudo chmod 755 /usr/local/bin/hal
