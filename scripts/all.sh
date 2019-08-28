@@ -381,6 +381,18 @@ seed_halconfig () {
   fi
 }
 
+create_hal_shortcut () {
+sudo tee /usr/local/bin/hal <<-'EOF'
+#!/bin/bash
+POD_NAME=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
+# echo $POD_NAME
+set -x
+kubectl -n spinnaker exec -it ${POD_NAME} hal $@
+EOF
+
+sudo chmod 755 /usr/local/bin/hal
+}
+
 ##### Script starts here
 
 # Scaffold out directories
@@ -422,3 +434,5 @@ done
 sleep 5;
 HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
 kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+
+create_hal_shortcut
