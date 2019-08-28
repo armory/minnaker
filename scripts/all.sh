@@ -72,7 +72,7 @@ spec:
     spec:
       containers:
       - name: halyard
-        image: armory/halyard-armory:1.6.4
+        image: armory/halyard-armory:1.6.5
         volumeMounts:
         - name: hal
           mountPath: "/home/spinnaker/.hal"
