@@ -404,6 +404,8 @@ create_kubernetes_creds
 
 # Install Minio and service
 
+# Need sudo here cause the kubeconfig is owned by root with 644
+sudo kubectl config set-context default --namespace spinnaker
 kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
 kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker.yaml
 kubectl apply -f /etc/spinnaker/manifests/minio.yaml
