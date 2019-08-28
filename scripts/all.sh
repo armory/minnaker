@@ -316,14 +316,15 @@ if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
 then
   sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
     /etc/spinnaker/templates/gate-local.yaml \
-    > sudo -u ${SPINUSER} tee  /etc/spinnaker/.hal/default/profiles/gate-local.yml
+    | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
 fi
 
 # Hydrate (dynamic) config seed with minio password and public IP
-sudo -u ${SPINUSER} sed \
-    -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
-    -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
-    /etc/spinnaker/templates/config-seed > /etc/spinnaker/.hal/config-seed
+sed \
+  -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
+  -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
+  /etc/spinnaker/templates/config-seed \
+  | sudo -u ${SPINUSER} tee  /etc/spinnaker/.hal/config-seed
 
 # Seed config if it doesn't exist
 if [[ ! -e /etc/spinnaker/.hal/config ]]; then
