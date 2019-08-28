@@ -308,6 +308,79 @@ install_git () {
   set -e
 }
 
+populate_profiles () {
+# Populate (static) front50-local.yaml if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/front50-local.yml ]];
+then
+tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
+spinnaker.s3.versioning: false
+EOF
+fi
+
+# Populate (static) settings-local.js if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js ]];
+then
+tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.authEnabled = true;
+EOF
+fi
+
+# Hydrate (dynamic) gate-local.yml with password if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
+then
+  sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
+    /etc/spinnaker/templates/gate-local.yml \
+    | tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
+fi
+}
+
+create_kubernetes_creds () {
+  curl -L https://github.com/armory/spinnaker-tools/releases/download/0.0.6/spinnaker-tools-linux \
+      -o /etc/spinnaker/tools/spinnaker-tools
+
+  chmod +x /etc/spinnaker/tools/spinnaker-tools
+
+  /etc/spinnaker/tools/spinnaker-tools create-service-account \
+      -c default \
+      -i /etc/rancher/k3s/k3s.yaml \
+      -o /etc/spinnaker/.kube/localhost-config \
+      -n spinnaker \
+      -s spinnaker-sa
+
+  sudo chown 1000 /etc/spinnaker/.kube/localhost-config
+
+  sed "s/localhost/$(cat /etc/spinnaker/.hal/private_ip)/g" \
+      /etc/spinnaker/.kube/localhost-config \
+      | tee /etc/spinnaker/.kube/config
+
+  cp -rpv /etc/spinnaker/.kube/config \
+      /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+}
+
+populate_minio_manifest () {
+  # Populate minio manifest if it doesn't exist
+  if [[ ! -e /etc/spinnaker/manifests/minio.yaml ]];
+  then
+    sed "s|PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
+      /etc/spinnaker/templates/minio.yaml \
+      | tee /etc/spinnaker/manifests/minio.yaml
+  fi
+}
+
+seed_halconfig () {
+  # Hydrate (dynamic) config seed with minio password and public IP
+  sed \
+    -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
+    -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
+    /etc/spinnaker/templates/config-seed \
+    | tee /etc/spinnaker/.hal/config-seed
+
+  # Seed config if it doesn't exist
+  if [[ ! -e /etc/spinnaker/.hal/config ]]; then
+    cp /etc/spinnaker/.hal/config-seed /etc/spinnaker/.hal/config
+  fi
+}
+
 ##### Script starts here
 
 # Scaffold out directories
@@ -318,82 +391,16 @@ sudo chown -R 1000 /etc/spinnaker
 install_k3s
 install_git
 
-
+get_metrics_server_manifest
 detect_ips
 generate_passwords
 print_templates
 print_manifests
-get_metrics_server_manifest
 print_bootstrap_script
-
-# Populate (static) front50-local.yaml if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/front50-local.yml ]];
-then
-# sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
-tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-fi
-
-# Populate (static) settings-local.js if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js ]];
-then
-# sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
-tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.authEnabled = true;
-EOF
-fi
-
-# Hydrate (dynamic) gate-local.yml with password if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
-then
-  sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
-    /etc/spinnaker/templates/gate-local.yaml \
-    | tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
-    # | sudo -u ${SPINUSER} tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
-fi
-
-# Hydrate (dynamic) config seed with minio password and public IP
-sed \
-  -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
-  -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
-  /etc/spinnaker/templates/config-seed \
-  | tee /etc/spinnaker/.hal/config-seed
-
-# Seed config if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/config ]]; then
-  cp /etc/spinnaker/.hal/config-seed /etc/spinnaker/.hal/config
-fi
-
-# Populate minio manifest if it doesn't exist
-if [[ ! -e /etc/spinnaker/manifests/minio.yaml ]];
-then
-  sed "s|PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
-    /etc/spinnaker/templates/minio.yaml \
-    | tee /etc/spinnaker/manifests/minio.yaml
-fi
-
-# Set up Kubernetes credentials
-
-curl -L https://github.com/armory/spinnaker-tools/releases/download/0.0.6/spinnaker-tools-linux -o /etc/spinnaker/tools/spinnaker-tools
-
-chmod +x /etc/spinnaker/tools/spinnaker-tools
-
-/etc/spinnaker/tools/spinnaker-tools create-service-account \
-    -c default \
-    -i /etc/rancher/k3s/k3s.yaml \
-    -o /etc/spinnaker/.kube/localhost-config \
-    -n spinnaker \
-    -s spinnaker-sa
-
-sudo chown 1000 /etc/spinnaker/.kube/localhost-config
-
-sed "s/localhost/$(cat /etc/spinnaker/.hal/private_ip)/g" \
-    /etc/spinnaker/.kube/localhost-config \
-    | tee /etc/spinnaker/.kube/config
-
-cp -rpv /etc/spinnaker/.kube/config \
-    /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+populate_profiles
+populate_minio_manifest
+seed_halconfig
+create_kubernetes_creds
 
 # Install Minio and service
 
@@ -404,7 +411,6 @@ kubectl apply -f /etc/spinnaker/manifests/halyard.yaml
 
 ######## Bootstrap
 
-
 while [[ $(kubectl get deployment -n spinnaker halyard -ojsonpath='{.status.availableReplicas}') -ne 1 ]];
 do
 echo "Waiting for Halyard pod to start"
@@ -414,13 +420,3 @@ done
 sleep 5;
 HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
 kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
-
-# # Start Halyard (TODO turn into daemon)
-# sudo docker run --name armory-halyard --rm \
-#     -v /etc/spinnaker/.hal:/home/spinnaker/.hal \
-#     -v /etc/spinnaker/.kube:/home/spinnaker/.kube \
-#     -d docker.io/armory/halyard-armory:1.6.4
-
-# sudo docker exec -it armory-halyard /home/spinnaker/.hal/start.sh
-
-# sudo kubectl get pods -n spinnaker --watch
