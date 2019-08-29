@@ -290,7 +290,6 @@ echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
   
   chmod +x /etc/spinnaker/.hal/start.sh
-# sudo -u ${SPINUSER} chmod +x /etc/spinnaker/.hal/start.sh
 }
 
 # Todo: Support multiple installation methods (apt, etc.)
@@ -404,11 +403,12 @@ install_k3s
 install_git
 
 get_metrics_server_manifest
-detect_ips
-generate_passwords
-print_templates
 print_manifests
 print_bootstrap_script
+print_templates
+
+detect_ips
+generate_passwords
 populate_profiles
 populate_minio_manifest
 seed_halconfig
