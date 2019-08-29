@@ -36,14 +36,14 @@ detect_ips () {
 generate_passwords () {
   if [[ ! -f /etc/spinnaker/.hal/.secret/minio_password ]]; then
     echo "Generating Minio password (/etc/spinnaker/.hal/.secret/minio_password):"
-    openssl rand -base64 32 | tee /etc/spinnaker/.hal/.secret/minio_password
+    openssl rand -base64 36 | tee /etc/spinnaker/.hal/.secret/minio_password
   else
     echo "Minio password already exists (/etc/spinnaker/.hal/.secret/minio_password)"
   fi
 
   if [[ ! -f /etc/spinnaker/.hal/.secret/spinnaker_password ]]; then
     echo "Generating Spinnaker password (/etc/spinnaker/.hal/.secret/spinnaker_password):"
-    openssl rand -base64 32 | tee /etc/spinnaker/.hal/.secret/spinnaker_password
+    openssl rand -base64 36 | tee /etc/spinnaker/.hal/.secret/spinnaker_password
   else
     echo "Spinnaker password already exists (/etc/spinnaker/.hal/.secret/spinnaker_password)"
   fi
