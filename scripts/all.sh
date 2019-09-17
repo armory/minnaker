@@ -50,7 +50,7 @@ generate_passwords () {
 }
 
 print_templates () {
-tee /etc/spinnaker/manifests/halyard.yaml <<-'EOF'
+tee /etc/spinnaker/manifests/halyard.yaml <<-EOF
 ---
 apiVersion: v1
 kind: Namespace
@@ -72,7 +72,7 @@ spec:
     spec:
       containers:
       - name: halyard
-        image: armory/halyard-armory:1.6.5
+        image: ${dockerimg}
         volumeMounts:
         - name: hal
           mountPath: "/home/spinnaker/.hal"
@@ -394,6 +394,23 @@ sudo chmod 755 /usr/local/bin/hal
 
 ##### Script starts here
 
+## Ask for Input
+
+read -t 5 -p 'Would you like to use [armory, oss]: ' version
+
+if [ $version = "armory" ]
+then
+  dockerimg="armory/halyard-armory:1.7.0"
+elif [ $version = "oss" ]  
+then
+  dockerimg="gcr.io/spinnaker-marketplace/halyard:stable"
+else
+  echo "uh oh, something went wrong! assuming you want armory..."
+  dockerimg="armory/halyard-armory:1.7.0"
+fi 
+
+echo "Setting the Docker Image to $dockerimg"
+
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
 sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates}
@@ -405,7 +422,7 @@ install_git
 get_metrics_server_manifest
 print_manifests
 print_bootstrap_script
-print_templates
+print_templates $dockerimg
 
 detect_ips
 generate_passwords
