@@ -400,13 +400,13 @@ read -t 5 -p 'Would you like to use [armory, oss]: ' version
 
 if [ $version = "armory" ]
 then
-  dockerimg="armory/halyard-armory:1.7.0"
+  dockerimg="armory/halyard-armory:1.7.1"
 elif [ $version = "oss" ]  
 then
   dockerimg="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   echo "uh oh, something went wrong! assuming you want armory..."
-  dockerimg="armory/halyard-armory:1.7.0"
+  dockerimg="armory/halyard-armory:1.7.1"
 fi 
 
 echo "Setting the Docker Image to $dockerimg"
