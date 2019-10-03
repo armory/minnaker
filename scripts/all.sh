@@ -348,7 +348,9 @@ create_kubernetes_creds () {
 
   sudo chown 1000 /etc/spinnaker/.kube/localhost-config
 
-  sed "s/localhost/$(cat /etc/spinnaker/.hal/private_ip)/g" \
+  # Sometimes k3s produces a kubeconfig with 127.0.0.1 instead of localhost
+
+  sed "s|https://.*:6443|https://$(cat /etc/spinnaker/.hal/private_ip):6443|g" \
       /etc/spinnaker/.kube/localhost-config \
       | tee /etc/spinnaker/.kube/config
 
