@@ -72,7 +72,7 @@ spec:
     spec:
       containers:
       - name: halyard
-        image: ${dockerimg}
+        image: DOCKER_IMAGE
         volumeMounts:
         - name: hal
           mountPath: "/home/spinnaker/.hal"
@@ -94,6 +94,8 @@ spec:
           path: /etc/spinnaker/.kube
           type: DirectoryOrCreate
 EOF
+
+sed -i "s|DOCKER_IMAGE|$1|g" /etc/spinnaker/manifests/halyard.yaml
 
 tee /etc/spinnaker/templates/minio.yaml <<-'EOF'
 ---
@@ -396,22 +398,27 @@ sudo chmod 755 /usr/local/bin/hal
 
 ##### Script starts here
 
-## Ask for Input
+OPEN_SOURCE=0
 
-read -t 5 -p 'Would you like to use [armory, oss]: ' version
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o|-oss)
+      printf "Using OSS Spinnaker"
+      OPEN_SOURCE=1
+      ;;
+  esac
+  shift
+done
 
-if [ $version = "armory" ]
-then
-  dockerimg="armory/halyard-armory:1.7.1"
-elif [ $version = "oss" ]  
-then
-  dockerimg="gcr.io/spinnaker-marketplace/halyard:stable"
+if [[ $OPEN_SOURCE -eq 1 ]]; then
+  printf "Using OSS Spinnaker"
+  DOCKER_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
-  echo "uh oh, something went wrong! assuming you want armory..."
-  dockerimg="armory/halyard-armory:1.7.1"
-fi 
+  printf "Using Armory Spinnaker"
+  DOCKER_IMAGE="armory/halyard-armory:1.7.1"
+fi
 
-echo "Setting the Docker Image to $dockerimg"
+echo "Setting the Halyard Image to ${DOCKER_IMAGE}"
 
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
@@ -424,7 +431,7 @@ install_git
 get_metrics_server_manifest
 print_manifests
 print_bootstrap_script
-print_templates $dockerimg
+print_templates ${DOCKER_IMAGE}
 
 detect_ips
 generate_passwords
