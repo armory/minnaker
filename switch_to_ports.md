@@ -44,3 +44,14 @@ kubectl -n kube-system delete helmcharts traefik
 kubectl -n spinnaker delete ingress spinnaker-ingress
 kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker.yaml
 ```
+
+## Change endpoint
+
+```bash
+
+hal config security ui edit --override-base-url http://$(cat /etc/spinnaker/.hal/public_ip)
+
+hal config security api edit --override-base-url http://$(cat /etc/spinnaker/.hal/public_ip):8084
+
+hal deploy apply
+```
