@@ -12,6 +12,18 @@ By default, this will install Spinnaker and configure it to listen on port 80 an
 
 If you have the ability to set up DNS pointing to your instance, you can switch to two DNS names (such as http://spinnaker.domain.com and http://gate.domain.com) using the instructions in [Switch to DNS](switch_to_dns).
 
+Super simple instructions for EC2:
+
+* Launch an Ubuntu 18.04 instance in EC2.  Make sure you can do the following:
+  * Access ports 22, 80, and 8084
+  * SSH in
+* SSH in, download the scripts/all.sh script, and run it:
+
+```bash
+curl -LO https://raw.githubusercontent.com/armory/mini-spinnaker/master/scripts/all.sh
+bash all.sh
+```
+
 Notes:
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to change some stuff:
   * If the public IP address has changed:
