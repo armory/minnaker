@@ -70,6 +70,7 @@ spec:
         path: /
 EOF
 
+kubectl -n spinnaker delete svc spin-deck-lb spin-gate-lb
 kubectl apply -f /etc/spinnaker/manifests/ingress.yml
 
 ```
