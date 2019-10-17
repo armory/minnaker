@@ -258,7 +258,7 @@ EOF
 
 tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
 ---
-apiVersion: v1
+apiVersion: extensions/vbeta1
 kind: Ingress
 metadata:
   labels:
