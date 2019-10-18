@@ -1,5 +1,7 @@
 # Spinnaker All-In-One Quick Start
 
+**Also known as Mini-Spinnaker.  Also known as Minnaker (with some indeterminate number of 'n's in the middle).
+
 ## Background
 
 * Given a single Linux machine (currently tested with Ubuntu 18.04 and Debian 10)
@@ -75,7 +77,8 @@
   * User: **admin**
   * Password: _paste from above_
 
-* Port 80 and 8084 on your VM need to be accessible from your workstation / browser
+* Port 80 on your VM need to be accessible from your workstation / browser
+* _As of 10/18/2019, we no longer need port 8084_
 
 ## Changing Your Spinnaker Configuration
 
@@ -98,9 +101,9 @@
 
 ## Details
 
-By default, this will install Spinnaker and configure it to listen on port 80 and 8084 (for the UI and API).
+By default, this will install Spinnaker and configure it to listen on port 80, using paths `/` and `/api/v1`(for the UI and API).
 
-If you have the ability to set up DNS pointing to your instance, you can switch to two DNS names (such as http://spinnaker.domain.com and http://gate.domain.com) using the instructions in [Switch to DNS](switch_to_dns).
+You can switch to the new path mechanism using [Switch to Paths](switch_to_paths).
 
 Notes:
 
