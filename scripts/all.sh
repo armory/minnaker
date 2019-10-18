@@ -4,7 +4,8 @@ set -e
 
 ##### Functions
 install_k3s () {
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
+  # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=644 sh -
 }
 
 detect_ips () {
@@ -188,7 +189,7 @@ deploymentConfigurations:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://PUBLIC_IP:8084
+      overrideBaseUrl: http://PUBLIC_IP/api/v1
     uiSecurity:
       ssl:
         enabled: false
@@ -199,18 +200,23 @@ deploymentConfigurations:
       accounts: []
 EOF
 
-tee /etc/spinnaker/templates/gate-local.yml <<-EOF
+tee /etc/spinnaker/templates/profiles/gate-local.yml <<-EOF
 security:
   basicform:
     enabled: true
   user:
     name: admin
     password: SPINNAKER_PASSWORD
+
+server:
+  servlet:
+    context-path: /api/v1
+
 EOF
 }
 
 print_manifests () {
-tee /etc/spinnaker/manifests/expose-spinnaker.yaml <<-'EOF'
+tee /etc/spinnaker/manifests/expose-spinnaker-services.yaml <<-'EOF'
 ---
 apiVersion: v1
 kind: Service
@@ -248,6 +254,33 @@ spec:
     app: spin
     cluster: spin-gate
   type: LoadBalancer
+EOF
+
+tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
+---
+apiVersion: extensions/vbeta1
+kind: Ingress
+metadata:
+  labels:
+    app: spin
+  name: spin-ingress
+  namespace: spinnaker
+spec:
+  rules:
+  - 
+    http:
+      paths:
+      - backend:
+          serviceName: spin-deck
+          servicePort: 9000
+        path: /
+  - 
+    http:
+      paths:
+      - backend:
+          serviceName: spin-gate
+          servicePort: 8084
+        path: /api/v1
 EOF
 }
 
@@ -330,8 +363,21 @@ fi
 if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
 then
   sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
-    /etc/spinnaker/templates/gate-local.yml \
+    /etc/spinnaker/templates/profiles/gate-local.yml \
     | tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
+fi
+}
+
+populate_service_settings () {
+# Populate (static) gate.yaml if it doesn't exist
+if [[ ! -e /etc/spinnaker/.hal/default/service-settings/gate.yml ]];
+then
+mkdir -p /etc/spinnaker/.hal/default/service-settings
+
+tee /etc/spinnaker/.hal/default/service-settings/gate.yml <<-'EOF'
+healthEndpoint: /api/v1/health
+
+EOF
 fi
 }
 
@@ -422,7 +468,7 @@ echo "Setting the Halyard Image to ${DOCKER_IMAGE}"
 
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
-sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates}
+sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
 sudo chown -R 1000 /etc/spinnaker
 
 install_k3s
@@ -436,6 +482,7 @@ print_templates ${DOCKER_IMAGE}
 detect_ips
 generate_passwords
 populate_profiles
+populate_service_settings
 populate_minio_manifest
 seed_halconfig
 create_kubernetes_creds
@@ -445,7 +492,8 @@ create_kubernetes_creds
 # Need sudo here cause the kubeconfig is owned by root with 644
 sudo kubectl config set-context default --namespace spinnaker
 kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
-kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker.yaml
+# kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker-services.yaml
+kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml
 kubectl apply -f /etc/spinnaker/manifests/minio.yaml
 kubectl apply -f /etc/spinnaker/manifests/halyard.yaml
 
