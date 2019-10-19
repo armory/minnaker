@@ -68,7 +68,7 @@ EOF
 ```bash
 tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
 ---
-apiVersion: extensions/vbeta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   labels:
