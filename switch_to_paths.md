@@ -97,7 +97,7 @@ EOF
 kubectl -n spinnaker delete svc spin-deck-lb spin-gate-lb
 kubectl -n spinnaker delete ingress spinnaker-ingress
 
-kubectl apply -f tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml
+kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml
 ```
 
 ## Change endpoint
