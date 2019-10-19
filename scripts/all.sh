@@ -461,7 +461,7 @@ if [[ $OPEN_SOURCE -eq 1 ]]; then
   DOCKER_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   printf "Using Armory Spinnaker"
-  DOCKER_IMAGE="armory/halyard-armory:1.7.1"
+  DOCKER_IMAGE="armory/halyard-armory:1.7.2"
 fi
 
 echo "Setting the Halyard Image to ${DOCKER_IMAGE}"
