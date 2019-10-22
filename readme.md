@@ -16,9 +16,9 @@
 ## Prequisites
 
 * Linux distribution running in a VM or bare metal
-  * 2 vCPUs
-  * 8Gb of RAM
-  * 10Gb of HDD
+  * 2 vCPUs (recommend 4)
+  * 8Gb of RAM (recommend 16)
+  * 20Gb of HDD (recommend 40)
   * NAT or Bridged networking with access to the internet
 
 * Install `curl` and `git`:
