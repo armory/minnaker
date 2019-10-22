@@ -3,6 +3,13 @@ set -x
 set -e
 
 ##### Functions
+print_help () {
+  echo "Usage: all.sh"
+  echo "               [-o|-oss]                             : Install Open Source Spinnaker (instead of Armory Spinnaker)"
+  echo "               [-P|-public-ip <PUBLIC-IP-ADDRESS>]   : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
+  echo "               [-p|-private-ip <PRIVATE-IP-ADDRESS>] : Specify private IP (or DNS name) for instance (rather than detcting interface IP)"
+}
+
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
   curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=644 sh -
@@ -471,6 +478,10 @@ while [ "$#" -gt 0 ]; do
         printf "Error: --private-ip requires an IP address >&2"
         exit 1
       fi
+      ;;
+    -h|--help)
+      print_help
+      exit 1
       ;;
   esac
   shift
