@@ -452,6 +452,26 @@ while [ "$#" -gt 0 ]; do
       printf "Using OSS Spinnaker"
       OPEN_SOURCE=1
       ;;
+    -P|-public-ip)
+      if [ -n $2 ]; then
+        PUBLIC_IP=$2
+        echo "${PUBLIC_IP}" > /etc/spinnaker/.hal/public_ip
+        shift
+      else
+        printf "Error: --public-ip requires an IP address >&2"
+        exit 1
+      fi
+      ;;
+    -p|-private-ip)
+      if [ -n $2 ]; then
+        PRIVATE_IP=$2
+        echo "${PRIVATE_IP}" > /etc/spinnaker/.hal/private_ip
+        shift
+      else
+        printf "Error: --private-ip requires an IP address >&2"
+        exit 1
+      fi
+      ;;
   esac
   shift
 done
