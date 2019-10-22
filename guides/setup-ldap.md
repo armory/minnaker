@@ -52,6 +52,12 @@ spec:
   type: ClusterIP
 ```
 
+Create it:
+
+```bash
+kubectl apply -f ldap.yml
+```
+
 ## Enable LDAP AuthN
 
 ```bash
