@@ -4,10 +4,12 @@ set -e
 
 ##### Functions
 print_help () {
+  set +x
   echo "Usage: all.sh"
   echo "               [-o|-oss]                             : Install Open Source Spinnaker (instead of Armory Spinnaker)"
   echo "               [-P|-public-ip <PUBLIC-IP-ADDRESS>]   : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
-  echo "               [-p|-private-ip <PRIVATE-IP-ADDRESS>] : Specify private IP (or DNS name) for instance (rather than detcting interface IP)"
+  echo "               [-p|-private-ip <PRIVATE-IP-ADDRESS>] : Specify private IP (or DNS name) for instance (rather than detecting interface IP)"
+  set -x
 }
 
 install_k3s () {
@@ -17,23 +19,34 @@ install_k3s () {
 
 detect_ips () {
   if [[ ! -f /etc/spinnaker/.hal/private_ip ]]; then
-    echo "Detecting Private IP (and storing in /etc/spinnaker/.hal/private_ip):"
-    # Need a better way of getting this.
-    ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee /etc/spinnaker/.hal/private_ip
+    if [[ -n "${PRIVATE_IP}" ]]; then
+      echo "Using provided private IP ${PRIVATE_IP}"
+      echo "${PRIVATE_IP}" > /etc/spinnaker/.hal/private_ip
+    else
+      echo "Detecting Private IP (and storing in /etc/spinnaker/.hal/private_ip):"
+      # Need a better way of getting this.
+      ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee /etc/spinnaker/.hal/private_ip
+      echo "Detected Private IP $(cat tee /etc/spinnaker/.hal/private_ip)"
+    fi
   else
     echo "Using existing Private IP from /etc/spinnaker/.hal/private_ip"
     cat /etc/spinnaker/.hal/private_ip
   fi
 
   if [[ ! -f /etc/spinnaker/.hal/public_ip ]]; then
-    if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-      echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in /etc/spinnaker/.hal/public_ip):"
-      curl -sSfL ifconfig.co | tee /etc/spinnaker/.hal/public_ip
+    if [[ -n "${PUBLIC_IP}" ]]; then
+      echo "Using provided public IP ${PUBLIC_IP}"
+      echo "${PUBLIC_IP}" > /etc/spinnaker/.hal/public_ip
     else
-      echo "No cloud metadata endpoint detected, using private IP for public IP (and storing in /etc/spinnaker/.hal/public_ip):"
-      cp -rp /etc/spinnaker/.hal/private_ip \
-          /etc/spinnaker/.hal/public_ip
-      cat /etc/spinnaker/.hal/public_ip
+      if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
+        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in /etc/spinnaker/.hal/public_ip):"
+        curl -sSfL ifconfig.co | tee /etc/spinnaker/.hal/public_ip
+      else
+        echo "No cloud metadata endpoint detected, using private IP for public IP (and storing in /etc/spinnaker/.hal/public_ip):"
+        cp -rp /etc/spinnaker/.hal/private_ip \
+            /etc/spinnaker/.hal/public_ip
+        cat /etc/spinnaker/.hal/public_ip
+      fi
     fi
   else
     echo "Using existing Private IP from /etc/spinnaker/.hal/public_ip"
@@ -452,6 +465,8 @@ sudo chmod 755 /usr/local/bin/hal
 ##### Script starts here
 
 OPEN_SOURCE=0
+PUBLIC_IP=""
+PRIVATE_IP=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -462,7 +477,6 @@ while [ "$#" -gt 0 ]; do
     -P|-public-ip)
       if [ -n $2 ]; then
         PUBLIC_IP=$2
-        echo "${PUBLIC_IP}" > /etc/spinnaker/.hal/public_ip
         shift
       else
         printf "Error: --public-ip requires an IP address >&2"
@@ -472,7 +486,6 @@ while [ "$#" -gt 0 ]; do
     -p|-private-ip)
       if [ -n $2 ]; then
         PRIVATE_IP=$2
-        echo "${PRIVATE_IP}" > /etc/spinnaker/.hal/private_ip
         shift
       else
         printf "Error: --private-ip requires an IP address >&2"
