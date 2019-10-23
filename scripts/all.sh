@@ -14,7 +14,7 @@ print_help () {
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v0.9.1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 detect_ips () {
@@ -78,12 +78,16 @@ kind: Namespace
 metadata:
   name: spinnaker
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: halyard
   namespace: spinnaker
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: halyard
   strategy:
     type: Recreate
   template:
@@ -125,12 +129,16 @@ kind: Namespace
 metadata:
   name: minio
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: minio
   namespace: minio
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
   strategy:
     type: Recreate
   template:
@@ -278,7 +286,7 @@ EOF
 
 tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   labels:
