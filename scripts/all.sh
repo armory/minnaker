@@ -14,7 +14,7 @@ print_help () {
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v0.9.1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 detect_ips () {
