@@ -69,6 +69,23 @@ hal config security authn ldap edit \
 hal config security authn ldap enable
 ```
 
+Remove settings-local.js:
+
+```bash
+mv /etc/spinnaker/.hal/default/profiles/settings-local.js /etc/spinnaker/.hal/default/profiles/no-settings-local.js 
+```
+
+Disable basic auth:
+
+```bash
+sed -i 's/enabled: .*/enabled: false/g' \
+  /etc/spinnaker/.hal/default/profiles/gate-local.yml
+```
+
+```bash
+hal deploy apply
+```
+
 ## Enable LDAP AuthZ
 
 **Must get into Halyard container:**
