@@ -377,7 +377,7 @@ Then, trigger the pipeline:
 
 1. Click back on the "Pipelines" tab at the top of the page
 1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
-1. Click Run"
+1. Click "Run"
 
 _Notice that we used the exact same manifest; we just selected a different override namespace.  This works because the manifest doesn't have hardcoded namespaces._
 
@@ -459,12 +459,18 @@ Then, trigger the pipeline:
 
 1. Click back on the "Pipelines" tab at the top of the page
 1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
-1. Click Run"
+1. Click "Run"
 
 TODO: Explain ReplicaSet vs. Deployment
 
 ## Adding parameters to indicate the number of instances for each environment
 
+TODO: This.
+
 ## Adding an option to skip the staging environment, using a parameter
 
+TODO: This.
+
 ## Adding a webhook trigger to our application
+
+TODO: This.
