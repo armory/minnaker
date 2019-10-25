@@ -22,8 +22,9 @@ Through this document, we will be doing the following:
 1. Creating a Spinnaker "Application" called **hello-today**
 1. Creating the load balancers (service and ingress) for our application (one for each environment) through the UI.
 1. Creating a single-stage pipeline that deploys our application to the `dev` environment, and running it.
-1. Adding on additional stages that perform a manual judgment and then deploy to the `stage` environment.  And running the pipeline.
-1. Adding on additional stages that perform another manual judgment, and then deploy to the `prod` environment with a blue/green deployment.  And running the pipeline.
+1. Running the pipeline with a different parameter
+1. Adding on additional stages that perform a manual judgment and then deploy to the `test` environment.  And running the pipeline.
+1. Adding on additional stages that perform another manual judgment and a wait and then deploy to the `prod` environment with a blue/green deployment.  And running the pipeline.
 1. Adding parameters to indicate the number of instances for each environment.
 1. Adding an option to skip the staging environment, using a parameter.
 1. Adding a webhook trigger to our application
@@ -32,7 +33,7 @@ Through this document, we will be doing the following:
 
 This document assumes that you have the following:
 
-* Can log into the Spinnaker UI (should be accessible at http://<your-mini-spinnaker-ip>)
+* Can log into the Spinnaker UI (should be accessible at http://\<your-mini-spinnaker-ip-or-hostname\>)
 * Have terminal access to the Mini Spinnaker VM
 
 ## Setting up the namespaces
@@ -40,24 +41,24 @@ This document assumes that you have the following:
 *This step is performed through the CLI*
 
 There are several different viable patterns here:
+
 * Deploying to an existing namespace
 * Deploying a namespace at the same time as you deploy resources to the namespace
 * Deploying resources to an ephemeral namespace
 
 The first use case is the most common, so we're going to three namespaces first:
+
 * `dev`
-* `stage`
+* `test`
 * `prod`
 
 You can do this from the command line on the Mini-Spinnaker instance:
 
 ```bash
 kubectl create ns dev
-kubectl create ns stage
+kubectl create ns test
 kubectl create ns prod
 ```
-
-(You could also do this with one command: `kubectl create ns dev stage prod`)
 
 If you want, you can also create a namespace resource via Spinnaker, either through the UI or through a pipeline that does a `Deploy (Manifest)` with the Namespace manifest in it.
 
@@ -82,6 +83,7 @@ Let's create an application called "hello-today".
 Now that our Spinnaker Application and Kubernetes Namespaces are created, we're going to set up some load balancers.
 
 For each of our environments, we're going to set up two Kubernetes resources:
+
 * A "Service" of type "ClusterIP", which acts as an internal load balancer to access our applications
 * An "Ingress", which will configure Traefik to point specific paths on the Mini-Spinnaker VM to our internal Services
 
@@ -140,7 +142,7 @@ Create the **dev** Service and Ingress
 1. Click "Create"
 1. Click "Close"
 
-Create the **stage** Service and Ingress
+Create the **test** Service and Ingress
 
 1. Click on "Create Load Balancer"
 1. Paste in this:
@@ -151,7 +153,7 @@ Create the **stage** Service and Ingress
     kind: Service
     metadata:
       name: hello-today
-      namespace: stage
+      namespace: test
     spec:
       ports:
         - name: http
@@ -170,7 +172,7 @@ Create the **stage** Service and Ingress
       labels:
         app: hello-today
       name: hello-today
-      namespace: stage
+      namespace: test
     spec:
       rules:
         - http:
@@ -178,7 +180,7 @@ Create the **stage** Service and Ingress
               - backend:
                   serviceName: hello-today
                   servicePort: http
-                path: /stage/hello-today
+                path: /test/hello-today
     ```
 
 1. Click "Create"
@@ -263,35 +265,36 @@ Then, actually create the pipeline:
     1. Check the "Required" checkbox
     1. Check the "Pin Parameter" checkbox
     1. Add a Default Value of "monday" (all lowercase)
-1. Click "Add Stage"
-1. In the "Type" dropdown, select "Deploy (Manifest)"
-1. Update the "Stage Name" field to be "Deploy Dev"
-1. In the "Application" dropdown, select "spinnaker"
-1. Select the 'Override Namespace' checkbox, and select 'dev' in the dropdown
-1. In the "Manifest" field, put this (note the `${parameters['tag']}` field, which will pull in the tag parameter)
+1. Add the *Deploy Dev* stage
+    1. Click "Add Stage"
+    1. In the "Type" dropdown, select "Deploy (Manifest)"
+    1. Update the "Stage Name" field to be "Deploy Dev"
+    1. In the "Application" dropdown, select "spinnaker"
+    1. Select the 'Override Namespace' checkbox, and select 'dev' in the dropdown
+    1. In the "Manifest" field, put this (note the `${parameters["tag"]}` field, which will pull in the tag parameter)
 
-```yml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hello-today
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: hello-today
-  template:
-    metadata:
-      labels:
-        app: hello-today
-        lb: hello-today
-    spec:
-      containers:
-        - image: 'justinrlee/nginx:${parameters['tag']}'
-          name: primary
-          ports:
-            - containerPort: 80
-```
+        ```yml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: hello-today
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: hello-today
+          template:
+            metadata:
+              labels:
+                app: hello-today
+                lb: hello-today
+            spec:
+              containers:
+                - image: 'justinrlee/nginx:${parameters["tag"]}'
+                  name: primary
+                  ports:
+                    - containerPort: 80
+        ```
 
 1. Click "Save Changes"
 
@@ -299,15 +302,24 @@ Then, trigger the pipeline:
 
 1. Click back on the "Pipelines" tab at the top of the page
 1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
-1. Click Run"
+1. Click "Run"
 
 Your application should be deployed.  Look at the status of this in three ways:
 
 * Go to the "Infrastructure" tab and "Clusters" subtab, and you should see your application, which consists of a Deployment with a single ReplicaSet.  Examine different parts of this page.
 * Go to the "Infrastructure" tab and "Load Balancers" subtab.  Examine different parts of this page (for example, try checking the 'Instance' checkbox so you can see ReplicaSets and Pods attached to your Service)
-* Go to http://\<your-mini-spinnaker-instance-IP\>/dev/hello-today, and you should see your app.
+* Go to http://\<your-mini-spinnaker-ip-or-hostname\>/dev/hello-today, and you should see your app.
 
-## Add on manual judgment and `stage` deployment
+## Run the pipeline with a different parameter
+
+1. Click back on the "Pipelines" tab at the top of the page
+1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
+1. Replace "monday" with some other day of the week (like 'tuesday' or 'wednesday')
+1. Click "Run"
+
+## Expand the pipeline: Add manual judgment and `test` deployment
+
+Now that we have a running pipelines, let's add a promotion to a higher environment, gated by a manual approval.
 
 Go back to the Spinnaker pipelines page:
 
@@ -320,16 +332,136 @@ Edit your pipeline:
 
 1. Click on the "Configure" button next to your pipeline (or click on "Configure" in the top right, and select your pipeline)
 1. Click on the "Configuration" icon on the left side of the pipeline
-1. Add the "Manual Judgment Stage":
-    1. Click "Add stage"
+1. Add the "Manual Judgment: Deploy to Stage"
+    1. Click "Add stage". Note how the stage is set to run at the beginning of the pipeline.
     1. Select "Manual Judgment" from the "Type" dropdown
-    1. In the "Stage Name", enter "Approve Deployment to Stage"
-    1. In the "Instructions" field, enter "Please look at Dev and click 'Continue' to continue deploying to Stage"
-    1. Click in the "Depends On" field at the top, and select your "Deploy Dev" stage.  This will make it so that the manual judgment stage starts *after* the dev deployment completes.
+    1. In the "Stage Name", enter "Manual Judgment: Deploy to Test"
+    1. In the "Instructions" field, enter "Please verify Dev and click 'Continue' to continue deploying to Test"
+    1. Click in the "Depends On" field at the top, and select your "Deploy Dev" stage.  _Notice how this rearranges the stages so that the manual judgment stage depends on (starts *after*) the dev deployment stage._
     1. Click "Save Changes" in the bottom right.
+1. Add the *Deploy Test* stage
+    1. In the pieline layout section at the top of the page, click on "Manual Judgment: Deploy to Test" (you're probably already here)
+    1. Click "Add stage".  _Notice how the stage is dependent on the stage you had selected when you added the stage (the manual judgment stage)._
+    1. In the "Type" dropdown, select "Deploy (Manifest)"
+    1. Update the "Stage Name" field to be "Deploy Test"
+    1. In the "Application" dropdown, select "spinnaker"
+    1. Select the 'Override Namespace' checkbox, and select 'test' in the dropdown
+    1. In the "Manifest" field, put this (note the `${parameters["tag"]}` field, which will pull in the tag parameter)
 
+        ```yml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: hello-today
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: hello-today
+          template:
+            metadata:
+              labels:
+                app: hello-today
+                lb: hello-today
+            spec:
+              containers:
+                - image: 'justinrlee/nginx:${parameters["tag"]}'
+                  name: primary
+                  ports:
+                    - containerPort: 80
+        ```
+
+1. Click "Save Changes"
+
+Then, trigger the pipeline:
+
+1. Click back on the "Pipelines" tab at the top of the page
+1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
+1. Click Run"
+
+_Notice that we used the exact same manifest; we just selected a different override namespace.  This works because the manifest doesn't have hardcoded namespaces._
+
+Right now, we only have one Kubernetes "Account", called "spinnaker", which refers to the Kubernetes cluster that Spinnaker is running on.
+
+If we have added additional Kubernetes clusters to Spinnaker, we could also (alternately or in addition) configure Spinnaker to deploy to a different Kubernetes cluster by selecting a different option in the "Account" dropdown.
 
 ## Add on manual judgment and blue/green `prod deployment
+
+Next, we're going to show a blue/green deployment, which is handled by Spinnaker's traffic management capabilities.  We're going to gate this with both a manual judgment and a wait stage.
+
+Go back to the Spinnaker pipelines page:
+
+1. Log into the Spinnaker UI
+1. Go to the "Applications" tab
+1. Click on our "hello-today" application
+1. Go to the "Pipelines" tab.
+
+Edit your pipeline:
+
+1. Click on the "Configure" button next to your pipeline (or click on "Configure" in the top right, and select your pipeline)
+1. We're going to add two stages that depend on the "Deploy Test" stage.
+    1. Add the Manual Judgment Stage:
+        1. Click on the "Deploy Test" stage
+        1. Click on "Add stage"
+        1. Select "Manual Judgment" from the "Type" dropdown
+        1. In the "Stage Name", enter "Manual Judgment: Deploy to Prod"
+        1. In the "Instructions" field, enter "Please verify Test and click 'Continue' to continue deploying to Prod"
+        1. Click "Save Changes" in the bottom right.
+    1. Add the Wait Stage:
+        1. Click on the "Deploy Test" stage
+        1. Click on "Add stage"
+        1. Select "Wait" from the "Type" dropdown
+        1. In the "Stage Name", enter "Wait 30 Seconds"
+        1. Click "Save Changes" in the bottom right.
+        1. _Notice how we now have two stages that "Depend On" the "Deploy Test" stage.  Once the "Deploy Test" stage finishes, both of these stages will start.  A stage can have one or more stages that depend on it._
+1. Now we're going to add the Kubernetes blue/green "Deploy Prod" stage
+    1. Click on the "Manual Judgment: Deploy to Prod" stage
+    1. Click on "Add Stage"
+    1. In the "Type" dropdown, select "Deploy (Manifest)"
+    1. Update the "Stage Name" field to be "Deploy Prod"
+    1. Click in the empty "Depends On" field, and select "Wait 30 Seconds".  _Notice how this stage depends on both the wait and manual judgment stages - it will wait till both are complete before it starts.  A stage can depend on one more or stages._
+    1. In the "Account" dropdown, select "Spinnaker"
+    1. Check the "Override Namespace" checkbox and select "prod" from the "Namespace" dropdown
+    1. In the manifest field, enter this (_notice that this manifest is different from the other two manifests - this is explained below_).
+
+        ```yml
+        apiVersion: apps/v1
+        kind: ReplicaSet
+        metadata:
+          name: hello-today
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: hello-today
+          template:
+            metadata:
+              labels:
+                app: hello-today
+            spec:
+              containers:
+              - image: 'justinrlee/nginx:${parameters["tag"]}'
+                name: primary
+                ports:
+                - containerPort: 80
+                  protocol: TCP
+        ```
+
+    1. Below the manifest block, go to the "Rollout Strategy Options"
+    1. Check the box for "Spinnaker manages traffic based on your selected strategy"
+    1. Select "prod" from the "Service Namespace" dropdown
+    1. Select "hello-today" from the "Service(s)" dropdown
+    1. Check the "Send client requests to new pods" checkbox
+    1. Select "Red/Black" from the "Strategy" dropdown
+    1. Click "Save Changes" in the bottom right.
+
+Then, trigger the pipeline:
+
+1. Click back on the "Pipelines" tab at the top of the page
+1. Click on "Start Manual Execution" next to your newly created pipeline (you can also click "Start Manual Execution" in the top right, and then select your pipeline in the dropdown)
+1. Click Run"
+
+TODO: Explain ReplicaSet vs. Deployment
 
 ## Adding parameters to indicate the number of instances for each environment
 
