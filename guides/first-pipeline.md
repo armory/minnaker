@@ -116,7 +116,6 @@ Create the **dev** Service and Ingress
           targetPort: 80
       selector:
         lb: hello-today
-      type: LoadBalancer
     ---
     apiVersion: extensions/v1beta1
     kind: Ingress
@@ -161,7 +160,6 @@ Create the **stage** Service and Ingress
           targetPort: 80
       selector:
         lb: hello-today
-      type: LoadBalancer
     ---
     apiVersion: extensions/v1beta1
     kind: Ingress
@@ -206,7 +204,6 @@ Create the **prod** Service and Ingress
           targetPort: 80
       selector:
         lb: hello-today
-      type: LoadBalancer
     ---
     apiVersion: extensions/v1beta1
     kind: Ingress
