@@ -5,7 +5,7 @@
 ## Background
 
 * Given a single Linux machine (currently tested with Ubuntu 18.04 and Debian 10)
-* [Install k3s](http://rancher.com)
+* Install [k3s](http://rancher.com)
   * Traefik turned off
 * Install minio in k3s
   * Use a local volume
