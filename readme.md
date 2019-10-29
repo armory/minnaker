@@ -52,11 +52,19 @@
 
 * Execute the install script (add the `-o` flag if you want OSS Spinnaker)
 
+  This will, by default, install Armory Spinnaker and use your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.  If you are installing this on a baremetal or local VM, you should indicate the IP address for your server with the `-p` and `-P` flags (`-p` is the 'Private IP', and must be an IP address that exists on an interface on the machine; `-P` is the 'Public IP' and must be an address or DNS name you will use to access Spinnaker).
+
   ```bash
   ./all.sh
   ```
 
-* Installation will continue and take about 5 minutes to complete
+  For example, to install OSS Spinnaker on a VM with the IP address of 192.168.10.1, you could do something like this:
+
+  ```bash
+  ./all.sh -o -P 192.168.10.1 -p 192.168.10.1
+  ```
+
+* Installation will continue and take about 5-10 minutes to complete, depending on VM size
 
 ## Accessing Spinnaker
 
