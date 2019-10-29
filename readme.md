@@ -2,6 +2,8 @@
 
 **Also known as Mini-Spinnaker.  Also known as Minnaker (with some indeterminate number of 'n's in the middle).
 
+This is currently intended for POCs and trying out Spinnaker.
+
 ## Background
 
 * Given a single Linux machine (currently tested with Ubuntu 18.04 and Debian 10)
