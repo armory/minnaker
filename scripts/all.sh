@@ -360,7 +360,7 @@ install_git () {
   set +e
   if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
   then
-    snap install git
+    sudo snap install git
   elif [[ $(command -v apt-get >/dev/null; echo $?) -eq 0 ]];
   then
     sudo apt-get install git -y
