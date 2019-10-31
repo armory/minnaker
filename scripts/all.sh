@@ -217,11 +217,11 @@ deploymentConfigurations:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://PUBLIC_IP/api/v1
+      overrideBaseUrl: https://PUBLIC_IP/api/v1
     uiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://PUBLIC_IP
+      overrideBaseUrl: https://PUBLIC_IP
   artifacts:
     http:
       enabled: true
