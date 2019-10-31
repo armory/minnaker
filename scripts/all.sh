@@ -347,7 +347,7 @@ echo ""
 
 hal deploy apply --wait-for-completion
 
-echo "http://$(cat /home/spinnaker/.hal/public_ip)"
+echo "https://$(cat /home/spinnaker/.hal/public_ip)"
 echo "username: 'admin'"
 echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
