@@ -79,17 +79,16 @@ metadata:
   name: spinnaker
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: halyard
   namespace: spinnaker
 spec:
   replicas: 1
+  serviceName: halyard
   selector:
     matchLabels:
       app: halyard
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -130,17 +129,16 @@ metadata:
   name: minio
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: minio
   namespace: minio
 spec:
   replicas: 1
+  serviceName: minio
   selector:
     matchLabels:
       app: minio
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -217,11 +215,11 @@ deploymentConfigurations:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://PUBLIC_IP/api/v1
+      overrideBaseUrl: https://PUBLIC_IP/api/v1
     uiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://PUBLIC_IP
+      overrideBaseUrl: https://PUBLIC_IP
   artifacts:
     http:
       enabled: true
@@ -347,7 +345,7 @@ echo ""
 
 hal deploy apply --wait-for-completion
 
-echo "http://$(cat /home/spinnaker/.hal/public_ip)"
+echo "https://$(cat /home/spinnaker/.hal/public_ip)"
 echo "username: 'admin'"
 echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
@@ -552,7 +550,7 @@ kubectl apply -f /etc/spinnaker/manifests/halyard.yaml
 
 ######## Bootstrap
 
-while [[ $(kubectl get deployment -n spinnaker halyard -ojsonpath='{.status.availableReplicas}') -ne 1 ]];
+while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
 do
 echo "Waiting for Halyard pod to start"
 sleep 2;
