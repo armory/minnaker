@@ -79,17 +79,16 @@ metadata:
   name: spinnaker
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: halyard
   namespace: spinnaker
 spec:
   replicas: 1
+  serviceName: halyard
   selector:
     matchLabels:
       app: halyard
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -130,17 +129,16 @@ metadata:
   name: minio
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: minio
   namespace: minio
 spec:
   replicas: 1
+  serviceName: minio
   selector:
     matchLabels:
       app: minio
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
