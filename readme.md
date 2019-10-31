@@ -113,7 +113,7 @@ This is currently intended for POCs and trying out Spinnaker.
 
 By default, this will install Spinnaker and configure it to listen on port 80, using paths `/` and `/api/v1`(for the UI and API).
 
-You can switch to the new path mechanism using [Switch to Paths](switch_to_paths).
+You can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
 
 Notes:
 
