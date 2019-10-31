@@ -69,10 +69,13 @@ hal config security authn ldap edit \
 hal config security authn ldap enable
 ```
 
-Remove settings-local.js:
+Remove settings-local.js authEnabled flag:
+
+ (We can't remove the file completely cause of artifactrewrite, and can't explicitly set it to false, so we comment it)
 
 ```bash
-mv /etc/spinnaker/.hal/default/profiles/settings-local.js /etc/spinnaker/.hal/default/profiles/no-settings-local.js 
+sed -i 's|^window.spinnakerSettings.authEnabled|// window.spinnakerSettings.authEnabled|g' \
+  /etc/spinnaker/.hal/default/profiles/settings-local.js
 ```
 
 Disable basic auth:

@@ -383,6 +383,7 @@ fi
 if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js ]];
 then
 tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.feature.artifactsRewrite = true;
 window.spinnakerSettings.authEnabled = true;
 EOF
 fi
