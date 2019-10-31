@@ -550,7 +550,7 @@ kubectl apply -f /etc/spinnaker/manifests/halyard.yaml
 
 ######## Bootstrap
 
-while [[ $(kubectl get deployment -n spinnaker halyard -ojsonpath='{.status.availableReplicas}') -ne 1 ]];
+while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
 do
 echo "Waiting for Halyard pod to start"
 sleep 2;
