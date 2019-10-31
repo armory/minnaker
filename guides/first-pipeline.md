@@ -1,12 +1,12 @@
 # Create your first pipeline
 
-We're going to create a demo pipeline that deploys to the Kubernetes cluster included with Mini-Spinnaker.
+We're going to create a demo pipeline that deploys to the Kubernetes cluster included with Minnaker.
 
 We will be deploying a Hello World application that indicates the weekday on which it was deployed.
 
-Note: this pipeline is a training exercise.  Typically, you could configure Spinnaker to deploy to some external Kubernetes cluster where you want your application to live, not the Kubernetes K3s instance that is embedded in Mini-Spinnaker.
+Note: this pipeline is a training exercise.  Typically, you could configure Spinnaker to deploy to some external Kubernetes cluster where you want your application to live, not the Kubernetes K3s instance that is embedded in Minnaker.
 
-Because we're deploying to the internal K3s cluster, we're going to use Traefik to expose our application on three paths on our Mini-Spinnaker instance:
+Because we're deploying to the internal K3s cluster, we're going to use Traefik to expose our application on three paths on our Minnaker instance:
 
 * `/dev/hello-today`
 * `/stage/hello-today`
@@ -33,7 +33,7 @@ Through this document, we will be doing the following:
 
 This document assumes that you have the following:
 
-* Can log into the Spinnaker UI (should be accessible at http://\<your-mini-spinnaker-ip-or-hostname\>)
+* Can log into the Spinnaker UI (should be accessible at http://\<your-minnaker-ip-or-hostname\>)
 * Have terminal access to the Mini Spinnaker VM
 
 ## Setting up the namespaces
@@ -52,7 +52,7 @@ The first use case is the most common, so we're going to three namespaces first:
 * `test`
 * `prod`
 
-You can do this from the command line on the Mini-Spinnaker instance:
+You can do this from the command line on the Minnaker instance:
 
 ```bash
 kubectl create ns dev
@@ -85,7 +85,7 @@ Now that our Spinnaker Application and Kubernetes Namespaces are created, we're 
 For each of our environments, we're going to set up two Kubernetes resources:
 
 * A "Service" of type "ClusterIP", which acts as an internal load balancer to access our applications
-* An "Ingress", which will configure Traefik to point specific paths on the Mini-Spinnaker VM to our internal Services
+* An "Ingress", which will configure Traefik to point specific paths on the Minnaker VM to our internal Services
 
 Spinnaker abstracts both Kubernetes Servic and Kubernetes Ingress objects as Spinnaker "Load Balancer" objects, so we'll be creating six total Spinnaker "Load Balancers" (one Ingress and one Service for each of our three Namespaces).
 
@@ -308,7 +308,7 @@ Your application should be deployed.  Look at the status of this in three ways:
 
 * Go to the "Infrastructure" tab and "Clusters" subtab, and you should see your application, which consists of a Deployment with a single ReplicaSet.  Examine different parts of this page.
 * Go to the "Infrastructure" tab and "Load Balancers" subtab.  Examine different parts of this page (for example, try checking the 'Instance' checkbox so you can see ReplicaSets and Pods attached to your Service)
-* Go to http://\<your-mini-spinnaker-ip-or-hostname\>/dev/hello-today, and you should see your app.
+* Go to http://\<your-minnaker-ip-or-hostname\>/dev/hello-today, and you should see your app.
 
 ## Run the pipeline with a different parameter
 

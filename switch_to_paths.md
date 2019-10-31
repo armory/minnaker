@@ -1,4 +1,4 @@
-# Switching from old Mini-Spinnaker (port-based routing) to Mini-Spinnaker using path-based routing
+# Switching from old Minnaker (port-based routing) to Minnaker using path-based routing
 
 ## (Re)Install Traefik
 

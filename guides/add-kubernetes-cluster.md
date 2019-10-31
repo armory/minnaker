@@ -1,6 +1,6 @@
 # Adding additional deployment targets (Kubernetes clusters) to Spinnaker
 
-Mini-Spinnaker installs a local distribution of Kubernetes (K3s) on your VM, which can be deployed to, but once Spinnaker is up and running, you can configure Spinnaker to be able to deploy to additional Kubernetes clusters.  Each of these is added as a Clouddriver **account**, which is information about a Kubernetes cluster (API server URL, certificate, credentials) that Spinnaker uses to interact with that Kubernetes cluster.
+Minnaker installs a local distribution of Kubernetes (K3s) on your VM, which can be deployed to, but once Spinnaker is up and running, you can configure Spinnaker to be able to deploy to additional Kubernetes clusters.  Each of these is added as a Clouddriver **account**, which is information about a Kubernetes cluster (API server URL, certificate, credentials) that Spinnaker uses to interact with that Kubernetes cluster.
 
 In order to do this, you basically need to generate a `kubeconfig` file that has credentials for your target Kubernetes cluster, and then give that to Spinnaker.
 
@@ -16,19 +16,19 @@ In the target Kubernetes cluster:
 The tool will also do this:
 * Create a `kubeconfig` file with the token for the generated service account
 
-Then we will take the generated kubeconfig, copy it to Mini-Spinnaker, and configure Mini-Spinnaker to use the kubeconfig to be able to deploy to your Kubernetes cluster.
+Then we will take the generated kubeconfig, copy it to Minnaker, and configure Minnaker to use the kubeconfig to be able to deploy to your Kubernetes cluster.
 
 ## Prerequisities
 
-This process should be run from your local workstation, *not from the Mini-Spinnaker VM*.  You must have access to the Kubernetes cluster you would like to deploy to, and you need cluster admin permissions on the Kubernetes cluster.
+This process should be run from your local workstation, *not from the Minnaker VM*.  You must have access to the Kubernetes cluster you would like to deploy to, and you need cluster admin permissions on the Kubernetes cluster.
 
-You should be able to run the following (again, from your local workstation, not the Mini-Spinnaker VM).
+You should be able to run the following (again, from your local workstation, not the Minnaker VM).
 
 ```bash
 kubectl get ns
 ```
 
-You should also be able to copy files from your local workstation to the Mini-Spinnaker VM.
+You should also be able to copy files from your local workstation to the Minnaker VM.
 
 ## Using `spinnaker-tools`
 
@@ -62,11 +62,11 @@ This will prompt for the following:
 
 This will create the service account (and namespace, if applicable), and the ClusterRoleBinding, then create the kubeconfig file with the specified name.
 
-Copy this file from your local workstation to your Mini-Spinnaker VM.  You can use scp or some other copy mechanism.
+Copy this file from your local workstation to your Minnaker VM.  You can use scp or some other copy mechanism.
 
 ## Add the kubeconfig to Spinnaker's Halyard Configuration
 
-On the Mini-Spinnaker VM, move or copy the file to `/etc/spinnaker/.hal/.secret` (make sure you are creating a new file, not overwriting an existing one).
+On the Minnaker VM, move or copy the file to `/etc/spinnaker/.hal/.secret` (make sure you are creating a new file, not overwriting an existing one).
 
 Then, run this command:
 
@@ -107,7 +107,7 @@ The `spinnaker-tools` binary supports command-line flags.  You can use `-h` to s
   --kubeconfig ~/.kube/config \
   --context my-kubernetes-context \
   --namespace kube-system \
-  --service-account-name mini-spinnaker-service-account \
+  --service-account-name minnaker-service-account \
   --output kubeconfig-my-kubernetes-cluster
 ```
 
@@ -132,7 +132,7 @@ To set up the service account and user, you can use the --target-namespaces flag
   --kubeconfig ~/.kube/config \
   --context prod-cluster \
   --namespace kube-system \
-  --service-account-name mini-spinnaker-prod-frontend-access \
+  --service-account-name minnaker-prod-frontend-access \
   --output kubeconfig-prod-frontend \
   --target-namespaces frontend
 ```
@@ -155,7 +155,7 @@ hal config provider kubernetes account add prod-frontend \
 
 AWS EKS supports the use of AWS IAM roles to access your Kubernetes cluster.  To do this, you can do the following:
 
-* Attach an IAM role to the VM where Mini-Spinnaker is running
+* Attach an IAM role to the VM where Minnaker is running
 * Add that role to the `aws-auth` configmap in your target EKS cluster (this lives in the `kube-system` namespace).
 * Generate a kubeconfig that uses `aws-iam-authenticator` to generate tokens (look at your existing `~/.kube/config` for an example of this)
 * Use this kubeconfig as opposed to the one generated above.

@@ -1,6 +1,6 @@
-# Spinnaker All-In-One Quick Start
+# Spinnaker All-In-One (Minnaker) Quick Start
 
-**Also known as Mini-Spinnaker.  Also known as Minnaker (with some indeterminate number of 'n's in the middle).
+**Previously known as Mini-Spinnaker**
 
 This is currently intended for POCs and trying out Spinnaker.
 
@@ -34,16 +34,16 @@ This is currently intended for POCs and trying out Spinnaker.
 ## Installation
 
 * Login (SSH) to your VM or bare metal box
-* Clone the mini-spinnaker repository
+* Clone the minnaker repository
 
   ```bash
-  git clone https://github.com/armory/mini-spinnaker
+  git clone https://github.com/armory/minnaker
   ```
 
-* Change the working directory to _mini-spinnaker/scripts_
+* Change the working directory to _minnaker/scripts_
 
   ```bash
-  cd mini-spinnaker/scripts
+  cd minnaker/scripts
   ```
 
 * Make the install script executable

@@ -22,7 +22,7 @@ Spinnaker supports notifications to Slack (and other places) on these six events
 
 ## Add the Slack bot user to Spinnaker
 
-1. SSH into your Mini-Spinnaker instance
+1. SSH into your Minnaker instance
 1. Run this command (replace `spinnakerbot` with your Slack bot's username) to add the Slack notification configuration.
 
     ```bash
