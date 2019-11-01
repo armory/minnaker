@@ -26,8 +26,6 @@ This is currently intended for POCs and trying out Spinnaker.
 * Install `curl` and `git`:
   * **Debian**
     * `sudo apt-get install curl git`
-  * **Fedora/CentOS**
-    * `sudo yum install curl git`
 
 ---
 
