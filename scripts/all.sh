@@ -237,7 +237,11 @@ security:
 server:
   servlet:
     context-path: /api/v1
-
+  tomcat:
+    protocolHeader: X-Forwarded-Proto
+    remoteIpHeader: X-Forwarded-For
+    internalProxies: .*
+    httpsServerPort: X-Forwarded-Port
 EOF
 }
 
