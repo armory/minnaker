@@ -58,10 +58,12 @@ This is currently intended for POCs and trying out Spinnaker.
   ./all.sh
   ```
 
-  For example, to install OSS Spinnaker on a VM with the IP address of 192.168.10.1, you could do something like this:
+  For example, to install OSS Spinnaker on a VM with the IP address of `192.168.10.1`, you could do something like this:
 
   ```bash
-  ./all.sh -o -P 192.168.10.1 -p 192.168.10.1
+  export PRIVATE_IP=192.168.10.1
+  export PUBLIC_IP=54.252.234.226
+  ./all.sh -o -P $PUBLIC_IP -p $PRIVATE_IP
   ```
 
 * Installation will continue and take about 5-10 minutes to complete, depending on VM size
@@ -118,11 +120,12 @@ Notes:
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to update Spinnaker with the new IP address(es):
 
   * If the public IP address has changed:
-    * Update /etc/spinnaker/.hal/public_ip with the new public IP address
-    * Update /etc/spinnaker/.hal/config and /etc/spinnaker/.hal/config-seed with the new public IP addresses (each one should have two `overrideBaseUrl` fields) (if you haven't switch to DNS)
+    * Update `/etc/spinnaker/.hal/public_ip` with the new public IP address
+    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
+    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
   * If the private IP address has changed:
-    * Update /etc/spinnaker/.hal/private_ip with the new private IP address
-    * Update the kubeconfigs at /etc/spinnaker/.kube/config and /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa with the new private IP address (in the `.clusters.cluster.server` field)
+    * Update `/etc/spinnaker/.hal/private_ip` with the new private IP address
+    * Update the kubeconfigs at `/etc/spinnaker/.kube/config` and `/etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa` with the new private IP address (in the `.clusters.cluster.server` field)
   * Run `hal deploy apply`
 
 * Certificate support isn't yet documented.  Many ways to achieve this:
