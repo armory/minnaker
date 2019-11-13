@@ -70,13 +70,22 @@ This is currently intended for POCs and trying out Spinnaker.
 
 ## Accessing Spinnaker
 
-* Determine you IP_ADDR
+* Determine your IP_ADDR
 
   ```bash
   hostname -I
   ```
 
-* Open your browser to the above IP_ADDR (http://IP/)
+  Alternately, run this command:
+
+  ```bash
+  grep override /etc/spinnaker/.hal/config
+  ```
+
+  And grab the first URL
+
+* Open your browser to the above IP_ADDR (https://IP/)
+
 * Get the Spinnaker password (you may need to ssh into your machine)
 
   ```bash
@@ -87,8 +96,9 @@ This is currently intended for POCs and trying out Spinnaker.
   * User: **admin**
   * Password: _paste from above_
 
-* Port 80 on your VM need to be accessible from your workstation / browser
+* Port 443 on your VM need to be accessible from your workstation / browser
 * _As of 10/18/2019, we no longer need port 8084_
+* _As of 11/11/2019, we use 443 instead of 80, and use Traefik's default self-signed certificate_
 
 ## Changing Your Spinnaker Configuration
 
@@ -111,9 +121,9 @@ This is currently intended for POCs and trying out Spinnaker.
 
 ## Details
 
-By default, this will install Spinnaker and configure it to listen on port 80, using paths `/` and `/api/v1`(for the UI and API).
+By default, this will install Spinnaker and configure it to listen on port 443, using paths `/` and `/api/v1`(for the UI and API).
 
-You can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
+If you previously installed Minnaker (prior to November 2019), you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
 
 Notes:
 
