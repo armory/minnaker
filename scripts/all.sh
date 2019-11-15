@@ -565,3 +565,6 @@ HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2
 kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
 
 create_hal_shortcut
+
+######### Add kubectl autocomplete
+echo 'source <(kubectl completion bash)' >>~/.bashrc
