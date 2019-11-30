@@ -2,37 +2,62 @@
 set -x
 set -e
 
+##### Dev Notes:
+# We use `yml` instead of `yaml` for consistency (all service-settings and profiles require `yml`)
+
+# On Linux, we assume we control the whole machine
+# On OSX, we minimize impact to non-Spinnaker things
+
+## TODO
+# Update to latest k3s (verify 1.8.0 uses new halyard)
+# Move metrics server manifests (and see if we need it) - also detect existence
+# Figure out nginx vs. traefik (nginx for m4m, traefik for ubuntu?, or use helm?)
+# Exclude spinnaker namespace
+# Figure out permissions for m4m
+# Update 'public_ip'/'PUBLIC_IP' to 'public/endpoint/PUBLIC_ENDPOINT'
+# Fix localhost public ip for m4m
+
+# OOB application(s)
+# Refactor all hydrates into a function: copy_and_hydrate
+
+
 ##### Functions
 print_help () {
   set +x
   echo "Usage: all.sh"
-  echo "               [-o|-oss]                             : Install Open Source Spinnaker (instead of Armory Spinnaker)"
-  echo "               [-P|-public-ip <PUBLIC-IP-ADDRESS>]   : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
-  echo "               [-p|-private-ip <PRIVATE-IP-ADDRESS>] : Specify private IP (or DNS name) for instance (rather than detecting interface IP)"
+  echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
+  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
+  echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v0.9.1" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.0.0" K3S_KUBECONFIG_MODE=644 sh -
 }
 
-detect_ips () {
-  # if [[ ! -f ${BASE_DIR}/.hal/private_ip ]]; then
-  #   if [[ -n "${PRIVATE_IP}" ]]; then
-  #     echo "Using provided private IP ${PRIVATE_IP}"
-  #     echo "${PRIVATE_IP}" > ${BASE_DIR}/.hal/private_ip
-  #   else
-  #     echo "Detecting Private IP (and storing in ${BASE_DIR}/.hal/private_ip):"
-  #     # Need a better way of getting this.
-  #     ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/private_ip
-  #     echo "Detected Private IP $(cat tee ${BASE_DIR}/.hal/private_ip)"
-  #   fi
-  # else
-  #   echo "Using existing Private IP from ${BASE_DIR}/.hal/private_ip"
-  #   cat ${BASE_DIR}/.hal/private_ip
-  # fi
+# Todo: Support multiple installation methods (apt, etc.)
+install_git () {
+  set +e
+  if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
+  then
+    sudo snap install git
+  elif [[ $(command -v apt-get >/dev/null; echo $?) -eq 0 ]];
+  then
+    sudo apt-get install git -y
+  else
+    sudo yum install git -y
+  fi
+  set -e
+}
 
+get_metrics_server_manifest () {
+# TODO: detect existence and skip if existing
+  rm -rf ${BASE_DIR}/manifests/metrics-server
+  git clone https://github.com/kubernetes-incubator/metrics-server.git ${BASE_DIR}/metrics-server
+}
+
+detect_endpoint () {
   if [[ ! -f ${BASE_DIR}/.hal/public_ip ]]; then
     if [[ -n "${PUBLIC_IP}" ]]; then
       echo "Using provided public IP ${PUBLIC_IP}"
@@ -48,7 +73,7 @@ detect_ips () {
       fi
     fi
   else
-    echo "Using existing Private IP from ${BASE_DIR}/.hal/public_ip"
+    echo "Using existing Public IP from ${BASE_DIR}/.hal/public_ip"
     cat ${BASE_DIR}/.hal/public_ip
   fi
 }
@@ -70,7 +95,25 @@ generate_passwords () {
 }
 
 print_templates () {
-tee ${BASE_DIR}/manifests/halyard.yaml <<-EOF
+### Miscellaneous
+# templates/halyard.yml
+# templates/minio.yml
+# templates/config-seed
+
+### .hal files (will be hydrated to `.hal/default/[]``)
+# templates/profiles/gate-local.yml
+#   - servlet path
+#   - https redirect headers
+#   - password (linux only)
+# templates/profiles/front50-local.yml
+#   - s3 versioning off
+# templates/profiles/settings-local.js
+#   - artifact rewrite
+#   - auth (linux only)
+# templates/service-settings/gate.yml
+#   - health check path
+
+tee ${BASE_DIR}/templates/halyard.yml <<-EOF
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -90,7 +133,7 @@ spec:
     spec:
       containers:
       - name: halyard
-        image: DOCKER_IMAGE
+        image: HALYARD_IMAGE
         volumeMounts:
         - name: hal
           mountPath: "/home/spinnaker/.hal"
@@ -113,11 +156,7 @@ spec:
           type: DirectoryOrCreate
 EOF
 
-sed -i.bak -e "s|DOCKER_IMAGE|$1|g" \
-  -e "s|BASE_DIR|${BASE_DIR}|g" \
-  ${BASE_DIR}/manifests/halyard.yaml
-
-tee ${BASE_DIR}/templates/minio.yaml <<-'EOF'
+tee ${BASE_DIR}/templates/minio.yml <<-'EOF'
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -217,14 +256,8 @@ deploymentConfigurations:
       accounts: []
 EOF
 
-tee ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
-security:
-  basicform:
-    enabled: true
-  user:
-    name: admin
-    password: SPINNAKER_PASSWORD
 
+tee ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
 server:
   servlet:
     context-path: /api/v1
@@ -234,10 +267,45 @@ server:
     internalProxies: .*
     httpsServerPort: X-Forwarded-Port
 EOF
+
+if [[ ${LINUX} -eq 1 ]]; then
+tee -a ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
+
+security:
+  basicform:
+    enabled: true
+  user:
+    name: admin
+    password: SPINNAKER_PASSWORD
+EOF
+fi
+
+tee ${BASE_DIR}/templates/profiles/front50-local.yml <<-'EOF'
+spinnaker.s3.versioning: false
+EOF
+
+tee ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.feature.artifactsRewrite = true;
+EOF
+
+if [[ ${LINUX} -eq 1 ]]; then
+tee -a ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.authEnabled = true;
+EOF
+fi
+
+tee ${BASE_DIR}/templates/service-settings/gate.yml <<-'EOF'
+healthEndpoint: /api/v1/health
+EOF
 }
 
 print_manifests () {
-tee ${BASE_DIR}/manifests/namespace.yaml <<-'EOF'
+###
+# namespace.yml
+# spinnaker-ingress.yml
+# spinnaker-default-clusteradmin-clusterrolebinding
+
+tee ${BASE_DIR}/manifests/namespace.yml <<-'EOF'
 ---
 apiVersion: v1
 kind: Namespace
@@ -245,47 +313,7 @@ metadata:
   name: spinnaker
 EOF
 
-tee ${BASE_DIR}/manifests/expose-spinnaker-services.yaml <<-'EOF'
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-deck-lb
-  name: spin-deck-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 9000
-  selector:
-    app: spin
-    cluster: spin-deck
-  sessionAffinity: None
-  type: LoadBalancer
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-gate-lb
-  name: spin-gate-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 8084
-    protocol: TCP
-    targetPort: 8084
-  selector:
-    app: spin
-    cluster: spin-gate
-  type: LoadBalancer
-EOF
-
-tee ${BASE_DIR}/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
+tee ${BASE_DIR}/manifests/spinnaker-ingress.yml <<-'EOF'
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -312,7 +340,8 @@ spec:
         path: /api/v1
 EOF
 
-tee ${BASE_DIR}/manifests/cluster-admin-rolebinding.yaml <<-'EOF'
+if [[ ${LINUX} -eq 1 ]]; then
+tee ${BASE_DIR}/manifests/spinnaker-default-clusteradmin-clusterrolebinding.yml <<-'EOF'
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -327,12 +356,7 @@ subjects:
   name: default
   namespace: spinnaker
 EOF
-}
-
-get_metrics_server_manifest () {
-# TODO: detect existence and skip if existing
-  rm -rf ${BASE_DIR}/manifests/metrics-server
-  git clone https://github.com/kubernetes-incubator/metrics-server.git ${BASE_DIR}/manifests/metrics-server
+fi
 }
 
 print_bootstrap_script () {
@@ -372,84 +396,70 @@ EOF
   chmod +x ${BASE_DIR}/.hal/start.sh
 }
 
-# Todo: Support multiple installation methods (apt, etc.)
-install_git () {
-  set +e
-  if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
-  then
-    sudo snap install git
-  elif [[ $(command -v apt-get >/dev/null; echo $?) -eq 0 ]];
-  then
-    sudo apt-get install git -y
-  else
-    sudo yum install git -y
-  fi
-  set -e
-}
 
-populate_profiles () {
-# Populate (static) front50-local.yaml if it doesn't exist
-if [[ ! -e ${BASE_DIR}/.hal/default/profiles/front50-local.yml ]];
-then
-tee ${BASE_DIR}/.hal/default/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-fi
-
-# Populate (static) settings-local.js if it doesn't exist
-if [[ ! -e ${BASE_DIR}/.hal/default/profiles/settings-local.js ]];
-then
-tee ${BASE_DIR}/.hal/default/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.feature.artifactsRewrite = true;
-window.spinnakerSettings.authEnabled = true;
-EOF
-fi
-
-# Hydrate (dynamic) gate-local.yml with password if it doesn't exist
-if [[ ! -e ${BASE_DIR}/.hal/default/profiles/gate-local.yml ]];
-then
-  sed "s|SPINNAKER_PASSWORD|$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)|g" \
-    ${BASE_DIR}/templates/profiles/gate-local.yml \
-    | tee ${BASE_DIR}/.hal/default/profiles/gate-local.yml
-fi
-}
-
-populate_service_settings () {
-# Populate (static) gate.yaml if it doesn't exist
-if [[ ! -e ${BASE_DIR}/.hal/default/service-settings/gate.yml ]];
-then
-mkdir -p ${BASE_DIR}/.hal/default/service-settings
-
-tee ${BASE_DIR}/.hal/default/service-settings/gate.yml <<-'EOF'
-healthEndpoint: /api/v1/health
-
-EOF
-fi
-}
-
-populate_minio_manifest () {
-  # Populate minio manifest if it doesn't exist
-  if [[ ! -e ${BASE_DIR}/manifests/minio.yaml ]];
-  then
+hydrate_manifest_halyard () {
+  if [[ ! -e ${BASE_DIR}/manifests/halyard.yml ]]; then
     sed \
-      -e "s|MINIO_PASSWORD|$(cat ${BASE_DIR}/.hal/.secret/minio_password)|g" \
+      -e "s|HALYARD_IMAGE|${HALYARD_IMAGE}|g" \
       -e "s|BASE_DIR|${BASE_DIR}|g" \
-      ${BASE_DIR}/templates/minio.yaml \
-      | tee ${BASE_DIR}/manifests/minio.yaml
+    ${BASE_DIR}/templates/halyard.yml \
+    | tee ${BASE_DIR}/manifests/halyard.yml
   fi
 }
 
-seed_halconfig () {
+hydrate_manifest_minio () {
+  MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
+
+  if [[ ! -e ${BASE_DIR}/manifests/minio.yml ]]; then
+    sed \
+      -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
+      -e "s|BASE_DIR|${BASE_DIR}|g" \
+    ${BASE_DIR}/templates/minio.yml \
+    | tee ${BASE_DIR}/manifests/minio.yml
+  fi
+}
+
+hydrate_and_seed_halconfig () {
+  MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
+  PUBLIC_IP=$(cat ${BASE_DIR}/.hal/public_ip)
+
   # Hydrate (dynamic) config seed with minio password and public IP
-  sed \
-    -e "s|MINIO_PASSWORD|$(cat ${BASE_DIR}/.hal/.secret/minio_password)|g" \
-    -e "s|PUBLIC_IP|$(cat ${BASE_DIR}/.hal/public_ip)|g" \
+    sed \
+      -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
+      -e "s|PUBLIC_IP|${PUBLIC_IP}|g" \
     ${BASE_DIR}/templates/config-seed \
-    | tee ${BASE_DIR}/.hal/config-seed
+    | tee ${BASE_DIR}/templates/config
 
   # Seed config if it doesn't exist
   if [[ ! -e ${BASE_DIR}/.hal/config ]]; then
-    cp ${BASE_DIR}/.hal/config-seed ${BASE_DIR}/.hal/config
+    cp ${BASE_DIR}/templates/config ${BASE_DIR}/.hal/config
+  fi
+}
+
+hydrate_profiles_and_service_settings () {
+  # None of these actually have BASE_DIR, but I like the pattern here
+  SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/gate-local.yml ]]; then
+    sed \
+      -e "s|SPINNAKER_PASSWORD|${SPINNAKER_PASSWORD}|g" \
+    ${BASE_DIR}/templates/profiles/gate-local.yml \
+    | tee ${BASE_DIR}/.hal/default/profiles/gate-local.yml
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/front50-local.yml ]]; then
+    cp ${BASE_DIR}/templates/profiles/front50-local.yml \
+      ${BASE_DIR}/.hal/default/profiles/front50-local.yml
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/settings-local.js ]]; then
+    cp ${BASE_DIR}/templates/profiles/settings-local.js \
+      ${BASE_DIR}/.hal/default/profiles/settings-local.js
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/service-settings/gate.yml ]]; then
+    cp ${BASE_DIR}/templates/service-settings/gate.yml \
+      ${BASE_DIR}/.hal/default/service-settings/gate.yml
   fi
 }
 
@@ -465,19 +475,33 @@ EOF
 sudo chmod 755 /usr/local/bin/hal
 }
 
-##### Script starts here
+######## Script starts here
 
 OPEN_SOURCE=0
 PUBLIC_IP=""
-# PRIVATE_IP=""
+
+case "$(uname -s)" in
+  Darwin*)
+    LINUX=0
+    BASE_DIR=~/minnaker
+    ;;
+  Linux*)
+    LINUX=1
+    BASE_DIR=/etc/spinnaker
+    ;;
+  *)
+    LINUX=1
+    BASE_DIR=/etc/spinnaker
+    ;;
+esac
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    -o|-oss)
+    -o|--oss)
       printf "Using OSS Spinnaker"
       OPEN_SOURCE=1
       ;;
-    -P|-public-ip)
+    -P|--public-endpoint)
       if [ -n $2 ]; then
         PUBLIC_IP=$2
         shift
@@ -486,15 +510,14 @@ while [ "$#" -gt 0 ]; do
         exit 1
       fi
       ;;
-    # -p|-private-ip)
-    #   if [ -n $2 ]; then
-    #     PRIVATE_IP=$2
-    #     shift
-    #   else
-    #     printf "Error: --private-ip requires an IP address >&2"
-    #     exit 1
-    #   fi
-    #   ;;
+    -B|--base-dir)
+      if [ -n $2 ]; then
+        BASE_DIR=$2
+      else
+        printf "Error: --base-dir requires a directory >&2"
+        exit 1
+      fi
+      ;;
     -h|--help)
       print_help
       exit 1
@@ -503,52 +526,69 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if [[ $OPEN_SOURCE -eq 1 ]]; then
+if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   printf "Using OSS Spinnaker"
-  DOCKER_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
+  HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   printf "Using Armory Spinnaker"
-  DOCKER_IMAGE="armory/halyard-armory:1.8.0"
+  HALYARD_IMAGE="armory/halyard-armory:1.8.0"
 fi
 
-echo "Setting the Halyard Image to ${DOCKER_IMAGE}"
+echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
-BASE_DIR="/etc/spinnaker"
-sudo mkdir -p ${BASE_DIR}/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
+# BASE_DIR="/etc/spinnaker"
+# sudo mkdir -p ${BASE_DIR}/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
+sudo mkdir -p ${BASE_DIR}/.kube
+sudo mkdir -p ${BASE_DIR}/.hal/.secret
+sudo mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+sudo mkdir -p ${BASE_DIR}/manifests
+sudo mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
 sudo chown -R 1000 ${BASE_DIR}
 
-install_k3s
-install_git
+if [[ ${LINUX} -eq 1 ]]; then
+  install_k3s
+  install_git
+  # get_metrics_server_manifest
+fi
 
-get_metrics_server_manifest
+detect_endpoint
+generate_passwords
+
+print_templates
 print_manifests
 print_bootstrap_script
-print_templates ${DOCKER_IMAGE}
 
-detect_ips
-generate_passwords
-populate_profiles
-populate_service_settings
-populate_minio_manifest
-seed_halconfig
-# create_kubernetes_creds
+hydrate_manifest_halyard
+hydrate_manifest_minio
+hydrate_and_seed_halconfig
+hydrate_profiles_and_service_settings
 
 # Install Minio and service
 
 # Need sudo here cause the kubeconfig is owned by root with 644
-sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
-kubectl apply -f ${BASE_DIR}/manifests/metrics-server/deploy/1.8+/
-# kubectl apply -f ${BASE_DIR}/manifests/expose-spinnaker-services.yaml
-kubectl apply -f ${BASE_DIR}/manifests/namespace.yaml
-kubectl apply -f ${BASE_DIR}/manifests/expose-spinnaker-ingress.yaml
-kubectl apply -f ${BASE_DIR}/manifests/minio.yaml
-kubectl apply -f ${BASE_DIR}/manifests/halyard.yaml
-kubectl apply -f ${BASE_DIR}/manifests/cluster-admin-rolebinding.yaml
+if [[ ${LINUX} -eq 1 ]]; then
+  sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
+fi
+
+# exit 1
+
+### Create all manifests:
+# - namespace
+# - halyard
+# - minio
+# - clusteradmin
+# - ingress
+# kubectl create ns spinnaker
+kubectl apply -f ${BASE_DIR}/manifests/namespace.yml
+kubectl apply -f ${BASE_DIR}/manifests
+
+# if [[ ${LINUX} -eq 1 ]]; then
+#   kubectl apply -f ${BASE_DIR}/metrics-server/deploy/1.8+/
+# fi
 
 ######## Bootstrap
-
 while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
 do
 echo "Waiting for Halyard pod to start"
@@ -559,18 +599,12 @@ sleep 5;
 HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
 kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
 
-create_hal_shortcut
+######### Add hal helper function
+if [[ ${LINUX} -eq 1 ]]; then
+  create_hal_shortcut
+fi
 
 ######### Add kubectl autocomplete
-echo 'source <(kubectl completion bash)' >>~/.bashrc
-
-## TODO
-# Update to latest k3s (needs update to Halyard and validation)
-# Move metrics server manifests (and see if we need it)
-# Consolidate the manifest apply
-# Remove all references to private IPs
-# Remove service manifest
-# Figure out nginx vs. traefik (nginx for m4m, traefik for ubuntu?, or use helm)
-# Exclude spinnaker namespace
-# Add OSX version of everything for minnaker-for-mac
-# OOB application(s)
+if [[ ${LINUX} -eq 1 ]]; then
+  echo 'source <(kubectl completion bash)' >>~/.bashrc
+fi
