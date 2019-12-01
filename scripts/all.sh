@@ -56,23 +56,23 @@ get_metrics_server_manifest () {
 }
 
 detect_endpoint () {
-  if [[ ! -f ${BASE_DIR}/.hal/public_ip ]]; then
-    if [[ -n "${PUBLIC_IP}" ]]; then
-      echo "Using provided public IP ${PUBLIC_IP}"
-      echo "${PUBLIC_IP}" > ${BASE_DIR}/.hal/public_ip
+  if [[ ! -f ${BASE_DIR}/.hal/public_endpoint ]]; then
+    if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
+      echo "Using provided public IP ${PUBLIC_ENDPOINT}"
+      echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_ip):"
-        curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_ip
+        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+        curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
       else
-        echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_ip):"
-        ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_ip
-        cat ${BASE_DIR}/.hal/public_ip
+        echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+        ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_endpoint
+        cat ${BASE_DIR}/.hal/public_endpoint
       fi
     fi
   else
-    echo "Using existing Public IP from ${BASE_DIR}/.hal/public_ip"
-    cat ${BASE_DIR}/.hal/public_ip
+    echo "Using existing Public IP from ${BASE_DIR}/.hal/public_endpoint"
+    cat ${BASE_DIR}/.hal/public_endpoint
   fi
 }
 
@@ -243,11 +243,11 @@ deploymentConfigurations:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: https://PUBLIC_IP/api/v1
+      overrideBaseUrl: https://PUBLIC_ENDPOINT/api/v1
     uiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: https://PUBLIC_IP
+      overrideBaseUrl: https://PUBLIC_ENDPOINT
   artifacts:
     http:
       enabled: true
@@ -386,7 +386,7 @@ echo ""
 
 hal deploy apply --wait-for-completion
 
-echo "https://$(cat /home/spinnaker/.hal/public_ip)"
+echo "https://$(cat /home/spinnaker/.hal/public_endpoint)"
 echo "username: 'admin'"
 echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
@@ -419,12 +419,12 @@ hydrate_manifest_minio () {
 
 hydrate_and_seed_halconfig () {
   MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-  PUBLIC_IP=$(cat ${BASE_DIR}/.hal/public_ip)
+  PUBLIC_ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
 
   # Hydrate (dynamic) config seed with minio password and public IP
     sed \
       -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
-      -e "s|PUBLIC_IP|${PUBLIC_IP}|g" \
+      -e "s|PUBLIC_ENDPOINT|${PUBLIC_ENDPOINT}|g" \
     ${BASE_DIR}/templates/config-seed \
     | tee ${BASE_DIR}/templates/config
 
@@ -476,7 +476,7 @@ sudo chmod 755 /usr/local/bin/hal
 ######## Script starts here
 
 OPEN_SOURCE=0
-PUBLIC_IP=""
+PUBLIC_ENDPOINT=""
 
 case "$(uname -s)" in
   Darwin*)
@@ -501,7 +501,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -P|--public-endpoint)
       if [ -n $2 ]; then
-        PUBLIC_IP=$2
+        PUBLIC_ENDPOINT=$2
         shift
       else
         printf "Error: --public-ip requires an IP address >&2"
@@ -535,32 +535,39 @@ fi
 echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 
 # Scaffold out directories
-# OSS Halyard uses 1000; we're using 1000 for everything
-# BASE_DIR="/etc/spinnaker"
-# sudo mkdir -p ${BASE_DIR}/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
 if [[ ${LINUX} -eq 1 ]]; then
-  LINUX_SUDO=sudo
-fi
-# Only sudo if we're on Linux
-${LINUX_SUDO} mkdir -p ${BASE_DIR}/.kube
-${LINUX_SUDO} mkdir -p ${BASE_DIR}/.hal/.secret
-${LINUX_SUDO} mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
-${LINUX_SUDO} mkdir -p ${BASE_DIR}/manifests
-${LINUX_SUDO} mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
+  echo "Running minnaker setup for Linux"
+  
+  # OSS Halyard uses 1000; we're using 1000 for everything
+  sudo mkdir -p ${BASE_DIR}/.kube
+  sudo mkdir -p ${BASE_DIR}/.hal/.secret
+  sudo mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+  sudo mkdir -p ${BASE_DIR}/manifests
+  sudo mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
 
-if [[ ${LINUX} -eq 1 ]]; then
   sudo chown -R 1000 ${BASE_DIR}
-fi
 
-
-if [[ ${LINUX} -eq 1 ]]; then
   install_k3s
   install_git
   # get_metrics_server_manifest
-fi
 
-detect_endpoint
-generate_passwords
+  detect_endpoint
+  generate_passwords
+
+  sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
+
+else
+  echo "Running minnaker setup for OSX"
+
+  # OSX / Docker Desktop has some fancy permissions so we do everything as ourselves
+  mkdir -p ${BASE_DIR}/.kube
+  mkdir -p ${BASE_DIR}/.hal/.secret
+  mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+  mkdir -p ${BASE_DIR}/manifests
+  mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
+  
+  echo "localhost" > ${BASE_DIR}/.hal/public_endpoint
+fi
 
 print_templates
 print_manifests
@@ -571,48 +578,35 @@ hydrate_manifest_minio
 hydrate_and_seed_halconfig
 hydrate_profiles_and_service_settings
 
-# Install Minio and service
-
-# Need sudo here cause the kubeconfig is owned by root with 644
 if [[ ${LINUX} -eq 1 ]]; then
-  sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
-fi
+  ### Create all manifests:
+  # - namespace - must be created first
+  # - halyard
+  # - minio
+  # - clusteradmin
+  # - ingress
+  kubectl apply -f ${BASE_DIR}/manifests/namespace.yml
+  kubectl apply -f ${BASE_DIR}/manifests
+    
+  # if [[ ${LINUX} -eq 1 ]]; then
+  #   kubectl apply -f ${BASE_DIR}/metrics-server/deploy/1.8+/
+  # fi
 
-if [[ ${LINUX} -eq 0 ]]; then
-  exit 1
-fi
-# exit 1
+  ######## Bootstrap
+  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+  do
+  echo "Waiting for Halyard pod to start"
+  sleep 2;
+  done
 
-### Create all manifests:
-# - namespace - must be created first
-# - halyard
-# - minio
-# - clusteradmin
-# - ingress
-kubectl apply -f ${BASE_DIR}/manifests/namespace.yml
-kubectl apply -f ${BASE_DIR}/manifests
+  sleep 5;
+  HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
+  kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
 
-# if [[ ${LINUX} -eq 1 ]]; then
-#   kubectl apply -f ${BASE_DIR}/metrics-server/deploy/1.8+/
-# fi
-
-######## Bootstrap
-while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
-do
-echo "Waiting for Halyard pod to start"
-sleep 2;
-done
-
-sleep 5;
-HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
-kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
-
-######### Add hal helper function
-if [[ ${LINUX} -eq 1 ]]; then
   create_hal_shortcut
-fi
-
-######### Add kubectl autocomplete
-if [[ ${LINUX} -eq 1 ]]; then
   echo 'source <(kubectl completion bash)' >>~/.bashrc
+
+else
+  # This hasn't been built yet
+  exit 1
 fi
