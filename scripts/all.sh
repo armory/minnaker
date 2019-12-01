@@ -9,11 +9,9 @@ set -e
 # On OSX, we minimize impact to non-Spinnaker things
 
 ## TODO
-# Update to latest k3s (verify 1.8.0 uses new halyard)
 # Move metrics server manifests (and see if we need it) - also detect existence
 # Figure out nginx vs. traefik (nginx for m4m, traefik for ubuntu?, or use helm?)
-# Exclude spinnaker namespace
-# Figure out permissions for m4m
+# Exclude spinnaker namespace - not doing this
 # Update 'public_ip'/'PUBLIC_IP' to 'public/endpoint/PUBLIC_ENDPOINT'
 # Fix localhost public ip for m4m
 
@@ -540,12 +538,20 @@ echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 # OSS Halyard uses 1000; we're using 1000 for everything
 # BASE_DIR="/etc/spinnaker"
 # sudo mkdir -p ${BASE_DIR}/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
-sudo mkdir -p ${BASE_DIR}/.kube
-sudo mkdir -p ${BASE_DIR}/.hal/.secret
-sudo mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
-sudo mkdir -p ${BASE_DIR}/manifests
-sudo mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
-sudo chown -R 1000 ${BASE_DIR}
+if [[ ${LINUX} -eq 1 ]]; then
+  LINUX_SUDO=sudo
+fi
+# Only sudo if we're on Linux
+${LINUX_SUDO} mkdir -p ${BASE_DIR}/.kube
+${LINUX_SUDO} mkdir -p ${BASE_DIR}/.hal/.secret
+${LINUX_SUDO} mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+${LINUX_SUDO} mkdir -p ${BASE_DIR}/manifests
+${LINUX_SUDO} mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
+
+if [[ ${LINUX} -eq 1 ]]; then
+  sudo chown -R 1000 ${BASE_DIR}
+fi
+
 
 if [[ ${LINUX} -eq 1 ]]; then
   install_k3s
@@ -572,15 +578,17 @@ if [[ ${LINUX} -eq 1 ]]; then
   sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
 fi
 
+if [[ ${LINUX} -eq 0 ]]; then
+  exit 1
+fi
 # exit 1
 
 ### Create all manifests:
-# - namespace
+# - namespace - must be created first
 # - halyard
 # - minio
 # - clusteradmin
 # - ingress
-# kubectl create ns spinnaker
 kubectl apply -f ${BASE_DIR}/manifests/namespace.yml
 kubectl apply -f ${BASE_DIR}/manifests
 
