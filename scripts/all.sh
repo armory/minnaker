@@ -552,7 +552,6 @@ if [[ ${LINUX} -eq 1 ]]; then
   # get_metrics_server_manifest
 
   detect_endpoint
-  generate_passwords
 
   sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
 
@@ -569,6 +568,7 @@ else
   echo "localhost" > ${BASE_DIR}/.hal/public_endpoint
 fi
 
+generate_passwords
 print_templates
 print_manifests
 print_bootstrap_script
@@ -595,8 +595,8 @@ if [[ ${LINUX} -eq 1 ]]; then
   ######## Bootstrap
   while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
   do
-  echo "Waiting for Halyard pod to start"
-  sleep 2;
+    echo "Waiting for Halyard pod to start"
+    sleep 2;
   done
 
   sleep 5;
@@ -607,6 +607,35 @@ if [[ ${LINUX} -eq 1 ]]; then
   echo 'source <(kubectl completion bash)' >>~/.bashrc
 
 else
+  curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller-mandatory.yaml
+  curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud-generic.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller-generic.yaml
+
   # This hasn't been built yet
-  exit 1
+  kubectl --context docker-desktop get ns
+  if [[ $? -eq 0 ]]; then
+    echo "Docker desktop detected"
+
+    # First two create namespaces, and must be run first
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests/namespace.yml
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests/nginx-ingress-controller-mandatory.yaml
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests
+
+
+    ######## Bootstrap
+    while [[ $(kubectl --context docker-desktop get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+    do
+      echo "Waiting for Halyard pod to start"
+      sleep 2;
+    done
+
+    sleep 5;
+    HALYARD_POD=$(kubectl --context docker-desktop -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
+    kubectl --context docker-desktop -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+
+    # create_hal_shortcut
+    # echo 'source <(kubectl completion bash)' >>~/.bashrc
+  
+  else
+    echo "Docker desktop not detected; bailing."  
+  fi
 fi

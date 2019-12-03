@@ -124,8 +124,8 @@ Create the **dev** Service and Ingress
     kind: Ingress
     metadata:
       annotations:
-        kubernetes.io/ingress.class: traefik
         traefik.ingress.kubernetes.io/rule-type: PathPrefixStrip
+        nginx.ingress.kubernetes.io/rewrite-target: /
       labels:
         app: hello-today
       name: hello-today
@@ -168,8 +168,8 @@ Create the **test** Service and Ingress
     kind: Ingress
     metadata:
       annotations:
-        kubernetes.io/ingress.class: traefik
         traefik.ingress.kubernetes.io/rule-type: PathPrefixStrip
+        nginx.ingress.kubernetes.io/rewrite-target: /
       labels:
         app: hello-today
       name: hello-today
@@ -212,8 +212,8 @@ Create the **prod** Service and Ingress
     kind: Ingress
     metadata:
       annotations:
-        kubernetes.io/ingress.class: traefik
         traefik.ingress.kubernetes.io/rule-type: PathPrefixStrip
+        nginx.ingress.kubernetes.io/rewrite-target: /
       labels:
         app: hello-today
       name: hello-today
