@@ -15,7 +15,7 @@ This is currently intended for POCs and trying out Spinnaker.
 * Install **Spinnaker** using Halyard
 * [Optionally] Configure development environment
 
-## Prequisites
+## Prerequisites
 
 * Linux distribution running in a VM or bare metal
   * 2 vCPUs (recommend 4)
@@ -23,9 +23,9 @@ This is currently intended for POCs and trying out Spinnaker.
   * 30GB of HDD (recommend 40+)
   * NAT or Bridged networking with access to the internet
 
-* Install `curl` and `git`:
+* Install ```curl``` and ```git```:
   * **Debian**
-    * `sudo apt-get install curl git`
+    * ```sudo apt-get install curl git```
 
 ---
 
@@ -106,8 +106,9 @@ This is currently intended for POCs and trying out Spinnaker.
 * Access the Halyard pod
 
   ```bash
-  export HAL_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)`
-  kubectl -n spinnaker exec -it ${HAL_POD} bash`
+  export HAL_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
+
+  kubectl -n spinnaker exec -it ${HAL_POD} bash
   ```
 
 * Run Halyard configuration commands like this example
@@ -123,7 +124,7 @@ This is currently intended for POCs and trying out Spinnaker.
 
 By default, this will install Spinnaker and configure it to listen on port 443, using paths `/` and `/api/v1`(for the UI and API).
 
-If you previously installed Minnaker (prior to November 2019), you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
+If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
 
 Notes:
 
@@ -141,9 +142,9 @@ Notes:
 * Certificate support isn't yet documented.  Many ways to achieve this:
   * Using actual cert files, create certs that Traefik can use in the ingress definition(s)
   * Using ACM or equivalent, put a certificate in front of the instance and change the overrides
-  * Either way, you *must* use certificates that your browser will trust that match your DNS name (your browser may not prompt to trust the untrustted API certificate)
+  * Either way, you *must* use certificates that your browser will trust that match your DNS name (your browser may not prompt to trust the untrusted API certificate)
 
-* If you need to get the password again, you can see the generated password at `/etc/spinnaker/.hal/.secret/spinnaker_password`:
+* If you need to get the password again, you can see the generated password in `/etc/spinnaker/.hal/.secret/spinnaker_password`:
 
   ```bash
   cat /etc/spinnaker/.hal/.secret/spinnaker_password
