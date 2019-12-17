@@ -2,131 +2,143 @@
 
 **Previously known as Mini-Spinnaker**
 
-This is currently intended for POCs and trying out Spinnaker.
+Minnaker is currently intended for POCs and trying out Spinnaker.
 
 ## Background
 
-* Given a single Linux machine (currently tested with Ubuntu 18.04 and Debian 10)
-* Install [k3s](http://rancher.com)
-  * Traefik turned off
-* Install minio in k3s
-  * Use a local volume
-* Set up **Halyard** in a Docker container (running in Kubernetes)
-* Install **Spinnaker** using Halyard
-* [Optionally] Configure development environment
+Minnaker performs the following actions when run on a single Linux instance:
 
-## Prerequisites
+* Installs [k3s](http://rancher.com) with Traefik turned off.
+* Installs minio in k3s with a local volume.
+* Sets up **Halyard** in a Docker container (running in Kubernetes).
+* Installs **Spinnaker** using Halyard.
+* Minnaker uses local authentication. The username is `admin` and the password is randomly generated when you install Minnaker. Find more details about getting the password in [Accessing Spinnaker](#accessing-spinnaker).
+* [Optionally] Configures development environment.
 
-* Linux distribution running in a VM or bare metal
-  * 2 vCPUs (recommend 4)
-  * 8Gb of RAM (recommend 16)
-  * 30GB of HDD (recommend 40+)
-  * NAT or Bridged networking with access to the internet
+## Requirements
 
-* Install ```curl``` and ```git```:
-  * **Debian**
-    * ```sudo apt-get install curl git```
+To use Minnaker, make sure your Linux instance meets the following requirements:
+
+* Ubuntu 18.04 or Debian 10 (VM or bare metal)
+* 2 vCPUs (recommend 4)
+* 8Gb of RAM (recommend 16)
+* 30GB of HDD (recommend 40+)
+* NAT or Bridged networking with access to the internet
+* `curl` and `git` are available. For example, to install `curl` and `git` on Debian, run the following command:
+  
+    ```
+    sudo apt-get install curl git
+    ```
+
+* Port `443` on your VM needs to be accessible from your workstation / browser. By default, Minnaker installs Spinnaker and configures it to listen on port `443`, using paths `/` and `/api/v1`(for the UI and API).
+
+
+## Changelog 
+
+* As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
+* If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
+* As of 10/18/2019, Minnaker no longer uses port 8084.
 
 ---
 
 ## Installation
 
-* Login (SSH) to your VM or bare metal box
-* Clone the minnaker repository
+1. Login (SSH) to your VM or bare metal box.
+2. Clone the minnaker repository:
 
-  ```bash
-  git clone https://github.com/armory/minnaker
-  ```
+    ```bash
+    git clone https://github.com/armory/minnaker
+    ```
 
-* Change the working directory to _minnaker/scripts_
+3. Change the working directory to _minnaker/scripts_:
 
-  ```bash
-  cd minnaker/scripts
-  ```
+    ```bash
+    cd minnaker/scripts
+    ```
 
-* Make the install script executable
+4. Make the install script executable:
 
-  ```bash
-  chmod 775 all.sh
-  ```
+    ```bash
+    chmod 775 all.sh
+    ```
 
-* Execute the install script (add the `-o` flag if you want OSS Spinnaker)
+5. Execute the install script. Note the following options before running the script:
+     * Add the `-o` flag if you want to install open source Spinnaker.
+     * By default, the script installs Armory Spinnaker and uses your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.
+     * For bare metal or a local VM, specify the IP address for your server with the `-p` and `-P` flags. `-p` is the 'Private IP' and must be an IP address that exists on an interface on the machine. `-P` is the 'Public IP' and must be an address or DNS name you will use to access Spinnaker.
 
-  This will, by default, install Armory Spinnaker and use your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.  If you are installing this on a baremetal or local VM, you should indicate the IP address for your server with the `-p` and `-P` flags (`-p` is the 'Private IP', and must be an IP address that exists on an interface on the machine; `-P` is the 'Public IP' and must be an address or DNS name you will use to access Spinnaker).
+    ```bash
+    ./all.sh
+    ```
 
-  ```bash
-  ./all.sh
-  ```
+    For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
-  For example, to install OSS Spinnaker on a VM with the IP address of `192.168.10.1`, you could do something like this:
+    ```bash
+    export PRIVATE_IP=192.168.10.1
+    export PUBLIC_IP=54.252.234.226
+    ./all.sh -o -P $PUBLIC_IP -p $PRIVATE_IP
+    ```
 
-  ```bash
-  export PRIVATE_IP=192.168.10.1
-  export PUBLIC_IP=54.252.234.226
-  ./all.sh -o -P $PUBLIC_IP -p $PRIVATE_IP
-  ```
-
-* Installation will continue and take about 5-10 minutes to complete, depending on VM size
+    Installation can take between 5-10 minutes to complete depending on VM size.
 
 ## Accessing Spinnaker
 
-* Determine your IP_ADDR
+1. Determine your IP_ADDR. On the Linux host, run the following command:
 
-  ```bash
-  hostname -I
-  ```
+    ```bash
+    hostname -I
+    ```
 
-  Alternately, run this command:
+    Alternately, run this command:
 
-  ```bash
-  grep override /etc/spinnaker/.hal/config
-  ```
+    ```bash
+    grep override /etc/spinnaker/.hal/config
+    ```
 
-  And grab the first URL
+    Use the first URL.
 
-* Open your browser to the above IP_ADDR (https://IP/)
+2. Get the Spinnaker password. On the Linux host, run the following command:
 
-* Get the Spinnaker password (you may need to ssh into your machine)
+    ```bash
+    cat /etc/spinnaker/.hal/.secret/spinnaker_password
+    ```
 
-  ```bash
-  cat /etc/spinnaker/.hal/.secret/spinnaker_password
-  ```
+3. In your browser, navigate to the IP_ADDR (https://IP/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
+     
+     If you installed Minnaker on a local VM, you must access it from your local machine. If you deployed Minnaker in the cloud, such as an EC2 instance, you can access Spinnaker from any machine that is in 
 
-* User credentials
-  * User: **admin**
-  * Password: _paste from above_
+4. Log in to Deck with the following credentials:
+   
+    Username: `admin`
 
-* Port 443 on your VM need to be accessible from your workstation / browser
-* _As of 10/18/2019, we no longer need port 8084_
-* _As of 11/11/2019, we use 443 instead of 80, and use Traefik's default self-signed certificate_
+    Password: <Password from step 2>   
 
 ## Changing Your Spinnaker Configuration
 
-* SSH into the machine where you have installed Spinnaker
-* Access the Halyard pod
+1. SSH into the machine where you have installed Spinnaker
+2. Access the Halyard pod:
 
-  ```bash
-  export HAL_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
+    ```bash
+    export HAL_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
 
-  kubectl -n spinnaker exec -it ${HAL_POD} bash
-  ```
+    kubectl -n spinnaker exec -it ${HAL_POD} bash
+    ```
 
-* Run Halyard configuration commands like this example
+3. Run Halyard configuration commands. For example, the following command allows you to configure and view the current deployment of Spinnaker’s version.
 
-  ```bash
-  hal config version
-  ```
+    ```bash
+    hal config version
+    ```
+    All Halyard configuration files are stored in `/etc/spinnaker/.hal`
 
-* Type `exit` to leave the pod
-* All of the Halyard configuration files are stored in `/etc/spinnaker/.hal`
+    For more information about Armory's Halyard, see [Armory Halyard commands](https://docs.armory.io/spinnaker/armory_halyard/).
+
+    For more information about open source Halyard, see [Halyard commands](https://www.spinnaker.io/reference/halyard/commands/).    
+  
+4. When finished, use the `exit` command to leave the pod.
+
 
 ## Details
-
-By default, this will install Spinnaker and configure it to listen on port 443, using paths `/` and `/api/v1`(for the UI and API).
-
-If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
-
-Notes:
 
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to update Spinnaker with the new IP address(es):
 
@@ -137,11 +149,11 @@ Notes:
   * If the private IP address has changed:
     * Update `/etc/spinnaker/.hal/private_ip` with the new private IP address
     * Update the kubeconfigs at `/etc/spinnaker/.kube/config` and `/etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa` with the new private IP address (in the `.clusters.cluster.server` field)
-  * Run `hal deploy apply`
+  * After you update the IP address, run `hal deploy apply`
 
-* Certificate support isn't yet documented.  Many ways to achieve this:
-  * Using actual cert files, create certs that Traefik can use in the ingress definition(s)
-  * Using ACM or equivalent, put a certificate in front of the instance and change the overrides
+* Certificate support isn't yet documented.  There are several ways to achieve this:
+  * Using actual cert files: create certs that Traefik can use in the ingress definition(s)
+  * Using ACM or equivalent: put a certificate in front of the instance and change the overrides
   * Either way, you *must* use certificates that your browser will trust that match your DNS name (your browser may not prompt to trust the untrusted API certificate)
 
 * If you need to get the password again, you can see the generated password in `/etc/spinnaker/.hal/.secret/spinnaker_password`:
