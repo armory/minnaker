@@ -93,304 +93,59 @@ generate_passwords () {
 }
 
 print_templates () {
-### Miscellaneous
-# templates/halyard.yml
-# templates/minio.yml
-# templates/config-seed
+  ### Miscellaneous
+  # templates/halyard.yml
+  # templates/minio.yml
+  # templates/config-seed
 
-### .hal files (will be hydrated to `.hal/default/[]``)
-# templates/profiles/gate-local.yml
-#   - servlet path
-#   - https redirect headers
-#   - password (linux only)
-# templates/profiles/front50-local.yml
-#   - s3 versioning off
-# templates/profiles/settings-local.js
-#   - artifact rewrite
-#   - auth (linux only)
-# templates/service-settings/gate.yml
-#   - health check path
+  ### .hal files (will be hydrated to `.hal/default/[]``)
+  # templates/profiles/gate-local.yml
+  #   - servlet path
+  #   - https redirect headers
+  #   - password (linux only)
+  # templates/profiles/front50-local.yml
+  #   - s3 versioning off
+  # templates/profiles/settings-local.js
+  #   - artifact rewrite
+  #   - auth (linux only)
+  # templates/service-settings/gate.yml
+  #   - health check path
 
-tee ${BASE_DIR}/templates/halyard.yml <<-EOF
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: halyard
-  namespace: spinnaker
-spec:
-  replicas: 1
-  serviceName: halyard
-  selector:
-    matchLabels:
-      app: halyard
-  template:
-    metadata:
-      labels:
-        app: halyard
-    spec:
-      containers:
-      - name: halyard
-        image: HALYARD_IMAGE
-        volumeMounts:
-        - name: hal
-          mountPath: "/home/spinnaker/.hal"
-        - name: kube
-          mountPath: "/home/spinnaker/.kube"
-        env:
-        - name: HOME
-          value: "/home/spinnaker"
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 65535
-      volumes:
-      - name: hal
-        hostPath:
-          path: BASE_DIR/.hal
-          type: DirectoryOrCreate
-      - name: kube
-        hostPath:
-          path: BASE_DIR/.kube
-          type: DirectoryOrCreate
-EOF
+  cp ${PROJECT_DIR}/templates/halyard.yml ${BASE_DIR}/templates/halyard.yml
+  cp ${PROJECT_DIR}/templates/minio.yml ${BASE_DIR}/templates/minio.yml
+  cp ${PROJECT_DIR}/templates/config-seed.yml ${BASE_DIR}/templates/config-seed
+  cp ${PROJECT_DIR}/templates/profiles/gate-local.yml ${BASE_DIR}/templates/profiles/gate-local.yml
 
-tee ${BASE_DIR}/templates/minio.yml <<-'EOF'
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: minio
-  namespace: spinnaker
-spec:
-  replicas: 1
-  serviceName: minio
-  selector:
-    matchLabels:
-      app: minio
-  template:
-    metadata:
-      labels:
-        app: minio
-    spec:
-      volumes:
-      - name: storage
-        hostPath:
-          path: BASE_DIR/minio
-          type: DirectoryOrCreate
-      containers:
-      - name: minio
-        image: minio/minio
-        args:
-        - server
-        - /storage
-        env:
-        # MinIO access key and secret key
-        - name: MINIO_ACCESS_KEY
-          value: "minio"
-        - name: MINIO_SECRET_KEY
-          value: "MINIO_PASSWORD"
-        ports:
-        - containerPort: 9000
-        volumeMounts:
-        - name: storage
-          mountPath: "/storage"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: minio
-  namespace: spinnaker
-spec:
-  ports:
-    - port: 9000
-      targetPort: 9000
-      protocol: TCP
-  selector:
-    app: minio
-EOF
+  if [[ ${LINUX} -eq 1 ]]; then
+    cat ${PROJECT_DIR}/templates/profiles/gate-local-linux.yml | tee -a ${BASE_DIR}/templates/profiles/gate-local.yml
+  fi
 
-tee ${BASE_DIR}/templates/config-seed <<-'EOF'
-currentDeployment: default
-deploymentConfigurations:
-- name: default
-  version: 2.17.1
-  providers:
-    kubernetes:
-      enabled: true
-      accounts:
-      - name: spinnaker
-        providerVersion: V2
-        serviceAccount: true
-        onlySpinnakerManaged: true
-      primaryAccount: spinnaker
-  deploymentEnvironment:
-    size: SMALL
-    type: Distributed
-    accountName: spinnaker
-    location: spinnaker
-  persistentStorage:
-    persistentStoreType: s3
-    s3:
-      bucket: spinnaker
-      rootFolder: front50
-      pathStyleAccess: true
-      endpoint: http://minio.spinnaker:9000
-      accessKeyId: minio
-      secretAccessKey: MINIO_PASSWORD
-  features:
-    artifacts: true
-  security:
-    apiSecurity:
-      ssl:
-        enabled: false
-      overrideBaseUrl: https://PUBLIC_ENDPOINT/api/v1
-    uiSecurity:
-      ssl:
-        enabled: false
-      overrideBaseUrl: https://PUBLIC_ENDPOINT
-  artifacts:
-    http:
-      enabled: true
-      accounts: []
-EOF
+  cp ${PROJECT_DIR}/templates/profiles/front50-local.yml ${BASE_DIR}/templates/profiles/front50-local.yml
+  cp ${PROJECT_DIR}/templates/profiles/settings-local.js ${BASE_DIR}/templates/profiles/settings-local.js
 
+  if [[ ${LINUX} -eq 1 ]]; then
+    cat ${PROJECT_DIR}/templates/profiles/settings-local-linux.js | tee -a ${BASE_DIR}/templates/profiles/settings-local.js
+  fi
 
-tee ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
-server:
-  servlet:
-    context-path: /api/v1
-  tomcat:
-    protocolHeader: X-Forwarded-Proto
-    remoteIpHeader: X-Forwarded-For
-    internalProxies: .*
-    httpsServerPort: X-Forwarded-Port
-EOF
-
-if [[ ${LINUX} -eq 1 ]]; then
-tee -a ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
-
-security:
-  basicform:
-    enabled: true
-  user:
-    name: admin
-    password: SPINNAKER_PASSWORD
-EOF
-fi
-
-tee ${BASE_DIR}/templates/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-
-tee ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.feature.artifactsRewrite = true;
-EOF
-
-if [[ ${LINUX} -eq 1 ]]; then
-tee -a ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.authEnabled = true;
-EOF
-fi
-
-tee ${BASE_DIR}/templates/service-settings/gate.yml <<-'EOF'
-healthEndpoint: /api/v1/health
-EOF
+  cp ${PROJECT_DIR}/templates/service-settings/gate.yml ${BASE_DIR}/templates/service-settings/gate.yml
 }
 
 print_manifests () {
-###
-# namespace.yml
-# spinnaker-ingress.yml
-# spinnaker-default-clusteradmin-clusterrolebinding
+  ###
+  # namespace.yml
+  # spinnaker-ingress.yml
+  # spinnaker-default-clusteradmin-clusterrolebinding
 
-tee ${BASE_DIR}/manifests/namespace.yml <<-'EOF'
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: spinnaker
-EOF
+  cp ${PROJECT_DIR}/templates/manifests/namespace.yml ${BASE_DIR}/manifests/namespace.yml
+  cp ${PROJECT_DIR}/templates/manifests/spinnaker-ingress.yml ${BASE_DIR}/manifests/spinnaker-ingress.yml
 
-tee ${BASE_DIR}/manifests/spinnaker-ingress.yml <<-'EOF'
----
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
-metadata:
-  labels:
-    app: spin
-  name: spin-ingress
-  namespace: spinnaker
-spec:
-  rules:
-  - 
-    http:
-      paths:
-      - backend:
-          serviceName: spin-deck
-          servicePort: 9000
-        path: /
-  - 
-    http:
-      paths:
-      - backend:
-          serviceName: spin-gate
-          servicePort: 8084
-        path: /api/v1
-EOF
-
-if [[ ${LINUX} -eq 1 ]]; then
-tee ${BASE_DIR}/manifests/spinnaker-default-clusteradmin-clusterrolebinding.yml <<-'EOF'
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: spinnaker-default-admin
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: default
-  namespace: spinnaker
-EOF
-fi
+  if [[ ${LINUX} -eq 1 ]]; then
+    cp ${PROJECT_DIR}/templates/manifests/spinnaker-default-clusteradmin-clusterrolebinding.yml ${BASE_DIR}/manifests/spinnaker-default-clusteradmin-clusterrolebinding.yml
+  fi
 }
 
 print_bootstrap_script () {
-tee ${BASE_DIR}/.hal/start.sh <<-'EOF'
-#!/bin/bash
-# Determine port detection method
-if [[ $(ss -h &> /dev/null; echo $?) -eq 0 ]];
-then
-  ns_cmd=ss
-else
-  ns_cmd=netstat
-fi
-
-# Wait for Spinnaker to start
-while [[ $(${ns_cmd} -plnt | grep 8064 | wc -l) -lt 1 ]];
-do
-  echo 'Waiting for Halyard daemon to start';
-  sleep 2;
-done
-
-VERSION=$(hal version latest -q)
-
-hal config version edit --version ${VERSION}
-sleep 5
-
-echo ""
-echo "Installing Spinnaker - this may take a while (up to 10 minutes) on slower machines"
-echo ""
-
-hal deploy apply --wait-for-completion
-
-echo "https://$(cat /home/spinnaker/.hal/public_endpoint)"
-echo "username: 'admin'"
-echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
-EOF
-  
+  cp ${PROJECT_DIR}/templates/.hal/start.sh ${BASE_DIR}/.hal/start.sh
   chmod +x ${BASE_DIR}/.hal/start.sh
 }
 
@@ -477,6 +232,7 @@ sudo chmod 755 /usr/local/bin/hal
 
 OPEN_SOURCE=0
 PUBLIC_ENDPOINT=""
+PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
 
 case "$(uname -s)" in
   Darwin*)

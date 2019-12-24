@@ -1,0 +1,7 @@
+
+security:
+  basicform:
+    enabled: true
+  user:
+    name: admin
+    password: SPINNAKER_PASSWORD
