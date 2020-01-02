@@ -270,7 +270,7 @@ Then, actually create the pipeline:
     1. Click "Add Stage"
     1. In the "Type" dropdown, select "Deploy (Manifest)"
     1. Update the "Stage Name" field to be "Deploy Dev"
-    1. In the "Application" dropdown, select "spinnaker"
+    1. In the "Account" dropdown, select "spinnaker"
     1. Select the 'Override Namespace' checkbox, and select 'dev' in the dropdown
     1. In the "Manifest" field, put this (note the `${parameters["tag"]}` field, which will pull in the tag parameter)
 
@@ -341,11 +341,11 @@ Edit your pipeline:
     1. Click in the "Depends On" field at the top, and select your "Deploy Dev" stage.  _Notice how this rearranges the stages so that the manual judgment stage depends on (starts *after*) the dev deployment stage._
     1. Click "Save Changes" in the bottom right.
 1. Add the *Deploy Test* stage
-    1. In the pieline layout section at the top of the page, click on "Manual Judgment: Deploy to Test" (you're probably already here)
+    1. In the pipeline layout section at the top of the page, click on "Manual Judgment: Deploy to Test" (you're probably already here)
     1. Click "Add stage".  _Notice how the stage is dependent on the stage you had selected when you added the stage (the manual judgment stage)._
     1. In the "Type" dropdown, select "Deploy (Manifest)"
     1. Update the "Stage Name" field to be "Deploy Test"
-    1. In the "Application" dropdown, select "spinnaker"
+    1. In the "Account" dropdown, select "spinnaker"
     1. Select the 'Override Namespace' checkbox, and select 'test' in the dropdown
     1. In the "Manifest" field, put this (note the `${parameters["tag"]}` field, which will pull in the tag parameter)
 
