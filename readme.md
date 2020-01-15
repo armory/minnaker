@@ -35,6 +35,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Changelog 
 
+* As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
 * As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
 * If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
 * As of 10/18/2019, Minnaker no longer uses port 8084.
@@ -74,9 +75,8 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
     ```bash
-    export PRIVATE_IP=192.168.10.1
-    export PUBLIC_IP=54.252.234.226
-    ./all.sh -o -P $PUBLIC_IP -p $PRIVATE_IP
+    export PRIVATE_ENDPOINT=192.168.10.1
+    ./all.sh -o -P $PRIVATE_ENDPOINT
     ```
 
     Installation can take between 5-10 minutes to complete depending on VM size.
