@@ -161,3 +161,8 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
   ```bash
   cat /etc/spinnaker/.hal/.secret/spinnaker_password
   ```
+
+## Uninstall Minnaker for OSX
+* Delete the `spinnaker` namespace: `kubectl --context docker-desktop delete ns spinnaker`
+* (Optionally) delete the `ingress-nginx` namespace: `kubectl --context docker-desktop delete ns ingress-nginx`
+* (Optionally) delete the local resources (including all pipeline defs): `rm -rf ~/minnaker`

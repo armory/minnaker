@@ -2,81 +2,116 @@
 set -x
 set -e
 
+##### Dev Notes:
+# We use `yml` instead of `yaml` for consistency (all service-settings and profiles require `yml`)
+
+# On Linux, we assume we control the whole machine
+# On OSX, we minimize impact to non-Spinnaker things
+
+## TODO
+# Move metrics server manifests (and see if we need it) - also detect existence
+# Figure out nginx vs. traefik (nginx for m4m, traefik for ubuntu?, or use helm?)
+# Exclude spinnaker namespace - not doing this
+# Update 'public_ip'/'PUBLIC_IP' to 'public/endpoint/PUBLIC_ENDPOINT'
+# Fix localhost public ip for m4m
+
+# OOB application(s)
+# Refactor all hydrates into a function: copy_and_hydrate
+
+
 ##### Functions
 print_help () {
   set +x
   echo "Usage: all.sh"
-  echo "               [-o|-oss]                             : Install Open Source Spinnaker (instead of Armory Spinnaker)"
-  echo "               [-P|-public-ip <PUBLIC-IP-ADDRESS>]   : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
-  echo "               [-p|-private-ip <PRIVATE-IP-ADDRESS>] : Specify private IP (or DNS name) for instance (rather than detecting interface IP)"
+  echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
+  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
+  echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v0.9.1" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.0.0" K3S_KUBECONFIG_MODE=644 sh -
 }
 
-detect_ips () {
-  if [[ ! -f /etc/spinnaker/.hal/private_ip ]]; then
-    if [[ -n "${PRIVATE_IP}" ]]; then
-      echo "Using provided private IP ${PRIVATE_IP}"
-      echo "${PRIVATE_IP}" > /etc/spinnaker/.hal/private_ip
-    else
-      echo "Detecting Private IP (and storing in /etc/spinnaker/.hal/private_ip):"
-      # Need a better way of getting this.
-      ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee /etc/spinnaker/.hal/private_ip
-      echo "Detected Private IP $(cat tee /etc/spinnaker/.hal/private_ip)"
-    fi
+# Todo: Support multiple installation methods (apt, etc.)
+install_git () {
+  set +e
+  if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
+  then
+    sudo snap install git
+  elif [[ $(command -v apt-get >/dev/null; echo $?) -eq 0 ]];
+  then
+    sudo apt-get install git -y
   else
-    echo "Using existing Private IP from /etc/spinnaker/.hal/private_ip"
-    cat /etc/spinnaker/.hal/private_ip
+    sudo yum install git -y
   fi
+  set -e
+}
 
-  if [[ ! -f /etc/spinnaker/.hal/public_ip ]]; then
-    if [[ -n "${PUBLIC_IP}" ]]; then
-      echo "Using provided public IP ${PUBLIC_IP}"
-      echo "${PUBLIC_IP}" > /etc/spinnaker/.hal/public_ip
+get_metrics_server_manifest () {
+# TODO: detect existence and skip if existing
+  rm -rf ${BASE_DIR}/manifests/metrics-server
+  git clone https://github.com/kubernetes-incubator/metrics-server.git ${BASE_DIR}/metrics-server
+}
+
+detect_endpoint () {
+  if [[ ! -f ${BASE_DIR}/.hal/public_endpoint ]]; then
+    if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
+      echo "Using provided public IP ${PUBLIC_ENDPOINT}"
+      echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in /etc/spinnaker/.hal/public_ip):"
-        curl -sSfL ifconfig.co | tee /etc/spinnaker/.hal/public_ip
+        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+        curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
       else
-        echo "No cloud metadata endpoint detected, using private IP for public IP (and storing in /etc/spinnaker/.hal/public_ip):"
-        cp -rp /etc/spinnaker/.hal/private_ip \
-            /etc/spinnaker/.hal/public_ip
-        cat /etc/spinnaker/.hal/public_ip
+        echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+        ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_endpoint
+        cat ${BASE_DIR}/.hal/public_endpoint
       fi
     fi
   else
-    echo "Using existing Private IP from /etc/spinnaker/.hal/public_ip"
-    cat /etc/spinnaker/.hal/public_ip
+    echo "Using existing Public IP from ${BASE_DIR}/.hal/public_endpoint"
+    cat ${BASE_DIR}/.hal/public_endpoint
   fi
 }
 
 generate_passwords () {
-  if [[ ! -f /etc/spinnaker/.hal/.secret/minio_password ]]; then
-    echo "Generating Minio password (/etc/spinnaker/.hal/.secret/minio_password):"
-    openssl rand -base64 36 | tee /etc/spinnaker/.hal/.secret/minio_password
+  if [[ ! -f ${BASE_DIR}/.hal/.secret/minio_password ]]; then
+    echo "Generating Minio password (${BASE_DIR}/.hal/.secret/minio_password):"
+    openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/minio_password
   else
-    echo "Minio password already exists (/etc/spinnaker/.hal/.secret/minio_password)"
+    echo "Minio password already exists (${BASE_DIR}/.hal/.secret/minio_password)"
   fi
 
-  if [[ ! -f /etc/spinnaker/.hal/.secret/spinnaker_password ]]; then
-    echo "Generating Spinnaker password (/etc/spinnaker/.hal/.secret/spinnaker_password):"
-    openssl rand -base64 36 | tee /etc/spinnaker/.hal/.secret/spinnaker_password
+  if [[ ! -f ${BASE_DIR}/.hal/.secret/spinnaker_password ]]; then
+    echo "Generating Spinnaker password (${BASE_DIR}/.hal/.secret/spinnaker_password):"
+    openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/spinnaker_password
   else
-    echo "Spinnaker password already exists (/etc/spinnaker/.hal/.secret/spinnaker_password)"
+    echo "Spinnaker password already exists (${BASE_DIR}/.hal/.secret/spinnaker_password)"
   fi
 }
 
 print_templates () {
-tee /etc/spinnaker/manifests/halyard.yaml <<-EOF
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: spinnaker
+### Miscellaneous
+# templates/halyard.yml
+# templates/minio.yml
+# templates/config-seed
+
+### .hal files (will be hydrated to `.hal/default/[]``)
+# templates/profiles/gate-local.yml
+#   - servlet path
+#   - https redirect headers
+#   - password (linux only)
+# templates/profiles/front50-local.yml
+#   - s3 versioning off
+# templates/profiles/settings-local.js
+#   - artifact rewrite
+#   - auth (linux only)
+# templates/service-settings/gate.yml
+#   - health check path
+
+tee ${BASE_DIR}/templates/halyard.yml <<-EOF
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -96,7 +131,7 @@ spec:
     spec:
       containers:
       - name: halyard
-        image: DOCKER_IMAGE
+        image: HALYARD_IMAGE
         volumeMounts:
         - name: hal
           mountPath: "/home/spinnaker/.hal"
@@ -111,28 +146,21 @@ spec:
       volumes:
       - name: hal
         hostPath:
-          path: /etc/spinnaker/.hal
+          path: BASE_DIR/.hal
           type: DirectoryOrCreate
       - name: kube
         hostPath:
-          path: /etc/spinnaker/.kube
+          path: BASE_DIR/.kube
           type: DirectoryOrCreate
 EOF
 
-sed -i "s|DOCKER_IMAGE|$1|g" /etc/spinnaker/manifests/halyard.yaml
-
-tee /etc/spinnaker/templates/minio.yaml <<-'EOF'
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: minio
+tee ${BASE_DIR}/templates/minio.yml <<-'EOF'
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: minio
-  namespace: minio
+  namespace: spinnaker
 spec:
   replicas: 1
   serviceName: minio
@@ -147,7 +175,7 @@ spec:
       volumes:
       - name: storage
         hostPath:
-          path: /etc/spinnaker/minio
+          path: BASE_DIR/minio
           type: DirectoryOrCreate
       containers:
       - name: minio
@@ -160,7 +188,7 @@ spec:
         - name: MINIO_ACCESS_KEY
           value: "minio"
         - name: MINIO_SECRET_KEY
-          value: "PASSWORD"
+          value: "MINIO_PASSWORD"
         ports:
         - containerPort: 9000
         volumeMounts:
@@ -171,7 +199,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: minio
-  namespace: minio
+  namespace: spinnaker
 spec:
   ports:
     - port: 9000
@@ -181,18 +209,18 @@ spec:
     app: minio
 EOF
 
-tee /etc/spinnaker/templates/config-seed <<-'EOF'
+tee ${BASE_DIR}/templates/config-seed <<-'EOF'
 currentDeployment: default
 deploymentConfigurations:
 - name: default
-  version: 2.15.0
+  version: 2.17.1
   providers:
     kubernetes:
       enabled: true
       accounts:
       - name: spinnaker
         providerVersion: V2
-        kubeconfigFile: /home/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+        serviceAccount: true
         onlySpinnakerManaged: true
       primaryAccount: spinnaker
   deploymentEnvironment:
@@ -206,7 +234,7 @@ deploymentConfigurations:
       bucket: spinnaker
       rootFolder: front50
       pathStyleAccess: true
-      endpoint: http://minio.minio:9000
+      endpoint: http://minio.spinnaker:9000
       accessKeyId: minio
       secretAccessKey: MINIO_PASSWORD
   features:
@@ -215,25 +243,19 @@ deploymentConfigurations:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: https://PUBLIC_IP/api/v1
+      overrideBaseUrl: https://PUBLIC_ENDPOINT/api/v1
     uiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: https://PUBLIC_IP
+      overrideBaseUrl: https://PUBLIC_ENDPOINT
   artifacts:
     http:
       enabled: true
       accounts: []
 EOF
 
-tee /etc/spinnaker/templates/profiles/gate-local.yml <<-EOF
-security:
-  basicform:
-    enabled: true
-  user:
-    name: admin
-    password: SPINNAKER_PASSWORD
 
+tee ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
 server:
   servlet:
     context-path: /api/v1
@@ -243,50 +265,53 @@ server:
     internalProxies: .*
     httpsServerPort: X-Forwarded-Port
 EOF
+
+if [[ ${LINUX} -eq 1 ]]; then
+tee -a ${BASE_DIR}/templates/profiles/gate-local.yml <<-EOF
+
+security:
+  basicform:
+    enabled: true
+  user:
+    name: admin
+    password: SPINNAKER_PASSWORD
+EOF
+fi
+
+tee ${BASE_DIR}/templates/profiles/front50-local.yml <<-'EOF'
+spinnaker.s3.versioning: false
+EOF
+
+tee ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.feature.artifactsRewrite = true;
+EOF
+
+if [[ ${LINUX} -eq 1 ]]; then
+tee -a ${BASE_DIR}/templates/profiles/settings-local.js <<-EOF
+window.spinnakerSettings.authEnabled = true;
+EOF
+fi
+
+tee ${BASE_DIR}/templates/service-settings/gate.yml <<-'EOF'
+healthEndpoint: /api/v1/health
+EOF
 }
 
 print_manifests () {
-tee /etc/spinnaker/manifests/expose-spinnaker-services.yaml <<-'EOF'
+###
+# namespace.yml
+# spinnaker-ingress.yml
+# spinnaker-default-clusteradmin-clusterrolebinding
+
+tee ${BASE_DIR}/manifests/namespace.yml <<-'EOF'
 ---
 apiVersion: v1
-kind: Service
+kind: Namespace
 metadata:
-  labels:
-    app: spin
-    cluster: spin-deck-lb
-  name: spin-deck-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 9000
-  selector:
-    app: spin
-    cluster: spin-deck
-  sessionAffinity: None
-  type: LoadBalancer
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-gate-lb
-  name: spin-gate-lb
-  namespace: spinnaker
-spec:
-  ports:
-  - port: 8084
-    protocol: TCP
-    targetPort: 8084
-  selector:
-    app: spin
-    cluster: spin-gate
-  type: LoadBalancer
+  name: spinnaker
 EOF
 
-tee /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml <<-'EOF'
+tee ${BASE_DIR}/manifests/spinnaker-ingress.yml <<-'EOF'
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -312,16 +337,28 @@ spec:
           servicePort: 8084
         path: /api/v1
 EOF
-}
 
-get_metrics_server_manifest () {
-# TODO: detect existence and skip if existing
-  rm -rf /etc/spinnaker/manifests/metrics-server
-  git clone https://github.com/kubernetes-incubator/metrics-server.git /etc/spinnaker/manifests/metrics-server
+if [[ ${LINUX} -eq 1 ]]; then
+tee ${BASE_DIR}/manifests/spinnaker-default-clusteradmin-clusterrolebinding.yml <<-'EOF'
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: spinnaker-default-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: spinnaker
+EOF
+fi
 }
 
 print_bootstrap_script () {
-tee /etc/spinnaker/.hal/start.sh <<-'EOF'
+tee ${BASE_DIR}/.hal/start.sh <<-'EOF'
 #!/bin/bash
 # Determine port detection method
 if [[ $(ss -h &> /dev/null; echo $?) -eq 0 ]];
@@ -349,115 +386,78 @@ echo ""
 
 hal deploy apply --wait-for-completion
 
-echo "https://$(cat /home/spinnaker/.hal/public_ip)"
+echo "https://$(cat /home/spinnaker/.hal/public_endpoint)"
 echo "username: 'admin'"
 echo "password: '$(cat /home/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
   
-  chmod +x /etc/spinnaker/.hal/start.sh
+  chmod +x ${BASE_DIR}/.hal/start.sh
 }
 
-# Todo: Support multiple installation methods (apt, etc.)
-install_git () {
-  set +e
-  if [[ $(command -v snap >/dev/null; echo $?) -eq 0 ]];
-  then
-    sudo snap install git
-  elif [[ $(command -v apt-get >/dev/null; echo $?) -eq 0 ]];
-  then
-    sudo apt-get install git -y
-  else
-    sudo yum install git -y
-  fi
-  set -e
-}
 
-populate_profiles () {
-# Populate (static) front50-local.yaml if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/front50-local.yml ]];
-then
-tee /etc/spinnaker/.hal/default/profiles/front50-local.yml <<-'EOF'
-spinnaker.s3.versioning: false
-EOF
-fi
-
-# Populate (static) settings-local.js if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/settings-local.js ]];
-then
-tee /etc/spinnaker/.hal/default/profiles/settings-local.js <<-EOF
-window.spinnakerSettings.feature.artifactsRewrite = true;
-window.spinnakerSettings.authEnabled = true;
-EOF
-fi
-
-# Hydrate (dynamic) gate-local.yml with password if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/profiles/gate-local.yml ]];
-then
-  sed "s|SPINNAKER_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)|g" \
-    /etc/spinnaker/templates/profiles/gate-local.yml \
-    | tee /etc/spinnaker/.hal/default/profiles/gate-local.yml
-fi
-}
-
-populate_service_settings () {
-# Populate (static) gate.yaml if it doesn't exist
-if [[ ! -e /etc/spinnaker/.hal/default/service-settings/gate.yml ]];
-then
-mkdir -p /etc/spinnaker/.hal/default/service-settings
-
-tee /etc/spinnaker/.hal/default/service-settings/gate.yml <<-'EOF'
-healthEndpoint: /api/v1/health
-
-EOF
-fi
-}
-
-create_kubernetes_creds () {
-  curl -L https://github.com/armory/spinnaker-tools/releases/download/0.0.6/spinnaker-tools-linux \
-      -o /etc/spinnaker/tools/spinnaker-tools
-
-  chmod +x /etc/spinnaker/tools/spinnaker-tools
-
-  /etc/spinnaker/tools/spinnaker-tools create-service-account \
-      -c default \
-      -i /etc/rancher/k3s/k3s.yaml \
-      -o /etc/spinnaker/.kube/localhost-config \
-      -n spinnaker \
-      -s spinnaker-sa
-
-  sudo chown 1000 /etc/spinnaker/.kube/localhost-config
-
-  # Sometimes k3s produces a kubeconfig with 127.0.0.1 instead of localhost
-
-  sed "s|https://.*:6443|https://$(cat /etc/spinnaker/.hal/private_ip):6443|g" \
-      /etc/spinnaker/.kube/localhost-config \
-      | tee /etc/spinnaker/.kube/config
-
-  cp -rpv /etc/spinnaker/.kube/config \
-      /etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
-}
-
-populate_minio_manifest () {
-  # Populate minio manifest if it doesn't exist
-  if [[ ! -e /etc/spinnaker/manifests/minio.yaml ]];
-  then
-    sed "s|PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
-      /etc/spinnaker/templates/minio.yaml \
-      | tee /etc/spinnaker/manifests/minio.yaml
+hydrate_manifest_halyard () {
+  if [[ ! -e ${BASE_DIR}/manifests/halyard.yml ]]; then
+    sed \
+      -e "s|HALYARD_IMAGE|${HALYARD_IMAGE}|g" \
+      -e "s|BASE_DIR|${BASE_DIR}|g" \
+    ${BASE_DIR}/templates/halyard.yml \
+    | tee ${BASE_DIR}/manifests/halyard.yml
   fi
 }
 
-seed_halconfig () {
+hydrate_manifest_minio () {
+  MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
+
+  if [[ ! -e ${BASE_DIR}/manifests/minio.yml ]]; then
+    sed \
+      -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
+      -e "s|BASE_DIR|${BASE_DIR}|g" \
+    ${BASE_DIR}/templates/minio.yml \
+    | tee ${BASE_DIR}/manifests/minio.yml
+  fi
+}
+
+hydrate_and_seed_halconfig () {
+  MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
+  PUBLIC_ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
+
   # Hydrate (dynamic) config seed with minio password and public IP
-  sed \
-    -e "s|MINIO_PASSWORD|$(cat /etc/spinnaker/.hal/.secret/minio_password)|g" \
-    -e "s|PUBLIC_IP|$(cat /etc/spinnaker/.hal/public_ip)|g" \
-    /etc/spinnaker/templates/config-seed \
-    | tee /etc/spinnaker/.hal/config-seed
+    sed \
+      -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
+      -e "s|PUBLIC_ENDPOINT|${PUBLIC_ENDPOINT}|g" \
+    ${BASE_DIR}/templates/config-seed \
+    | tee ${BASE_DIR}/templates/config
 
   # Seed config if it doesn't exist
-  if [[ ! -e /etc/spinnaker/.hal/config ]]; then
-    cp /etc/spinnaker/.hal/config-seed /etc/spinnaker/.hal/config
+  if [[ ! -e ${BASE_DIR}/.hal/config ]]; then
+    cp ${BASE_DIR}/templates/config ${BASE_DIR}/.hal/config
+  fi
+}
+
+hydrate_profiles_and_service_settings () {
+  # None of these actually have BASE_DIR, but I like the pattern here
+  SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/gate-local.yml ]]; then
+    sed \
+      -e "s|SPINNAKER_PASSWORD|${SPINNAKER_PASSWORD}|g" \
+    ${BASE_DIR}/templates/profiles/gate-local.yml \
+    | tee ${BASE_DIR}/.hal/default/profiles/gate-local.yml
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/front50-local.yml ]]; then
+    cp ${BASE_DIR}/templates/profiles/front50-local.yml \
+      ${BASE_DIR}/.hal/default/profiles/front50-local.yml
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/profiles/settings-local.js ]]; then
+    cp ${BASE_DIR}/templates/profiles/settings-local.js \
+      ${BASE_DIR}/.hal/default/profiles/settings-local.js
+  fi
+
+  if [[ ! -e ${BASE_DIR}/.hal/default/service-settings/gate.yml ]]; then
+    cp ${BASE_DIR}/templates/service-settings/gate.yml \
+      ${BASE_DIR}/.hal/default/service-settings/gate.yml
   fi
 }
 
@@ -473,33 +473,46 @@ EOF
 sudo chmod 755 /usr/local/bin/hal
 }
 
-##### Script starts here
+######## Script starts here
 
 OPEN_SOURCE=0
-PUBLIC_IP=""
-PRIVATE_IP=""
+PUBLIC_ENDPOINT=""
+
+case "$(uname -s)" in
+  Darwin*)
+    LINUX=0
+    BASE_DIR=~/minnaker
+    ;;
+  Linux*)
+    LINUX=1
+    BASE_DIR=/etc/spinnaker
+    ;;
+  *)
+    LINUX=1
+    BASE_DIR=/etc/spinnaker
+    ;;
+esac
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    -o|-oss)
+    -o|--oss)
       printf "Using OSS Spinnaker"
       OPEN_SOURCE=1
       ;;
-    -P|-public-ip)
+    -P|--public-endpoint)
       if [ -n $2 ]; then
-        PUBLIC_IP=$2
+        PUBLIC_ENDPOINT=$2
         shift
       else
         printf "Error: --public-ip requires an IP address >&2"
         exit 1
       fi
       ;;
-    -p|-private-ip)
+    -B|--base-dir)
       if [ -n $2 ]; then
-        PRIVATE_IP=$2
-        shift
+        BASE_DIR=$2
       else
-        printf "Error: --private-ip requires an IP address >&2"
+        printf "Error: --base-dir requires a directory >&2"
         exit 1
       fi
       ;;
@@ -511,60 +524,118 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if [[ $OPEN_SOURCE -eq 1 ]]; then
+if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   printf "Using OSS Spinnaker"
-  DOCKER_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
+  HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   printf "Using Armory Spinnaker"
-  DOCKER_IMAGE="armory/halyard-armory:1.7.2"
+  HALYARD_IMAGE="armory/halyard-armory:1.8.0"
 fi
 
-echo "Setting the Halyard Image to ${DOCKER_IMAGE}"
+echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 
 # Scaffold out directories
-# OSS Halyard uses 1000; we're using 1000 for everything
-sudo mkdir -p /etc/spinnaker/{.hal/.secret,.hal/default/profiles,.kube,manifests,tools,templates/profiles}
-sudo chown -R 1000 /etc/spinnaker
+if [[ ${LINUX} -eq 1 ]]; then
+  echo "Running minnaker setup for Linux"
+  
+  # OSS Halyard uses 1000; we're using 1000 for everything
+  sudo mkdir -p ${BASE_DIR}/.kube
+  sudo mkdir -p ${BASE_DIR}/.hal/.secret
+  sudo mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+  sudo mkdir -p ${BASE_DIR}/manifests
+  sudo mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
 
-install_k3s
-install_git
+  sudo chown -R 1000 ${BASE_DIR}
 
-get_metrics_server_manifest
+  install_k3s
+  install_git
+  # get_metrics_server_manifest
+
+  detect_endpoint
+
+  sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
+
+else
+  echo "Running minnaker setup for OSX"
+
+  # OSX / Docker Desktop has some fancy permissions so we do everything as ourselves
+  mkdir -p ${BASE_DIR}/.kube
+  mkdir -p ${BASE_DIR}/.hal/.secret
+  mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+  mkdir -p ${BASE_DIR}/manifests
+  mkdir -p ${BASE_DIR}/templates/{profiles,service-settings}
+  
+  echo "localhost" > ${BASE_DIR}/.hal/public_endpoint
+fi
+
+generate_passwords
+print_templates
 print_manifests
 print_bootstrap_script
-print_templates ${DOCKER_IMAGE}
 
-detect_ips
-generate_passwords
-populate_profiles
-populate_service_settings
-populate_minio_manifest
-seed_halconfig
-create_kubernetes_creds
+hydrate_manifest_halyard
+hydrate_manifest_minio
+hydrate_and_seed_halconfig
+hydrate_profiles_and_service_settings
 
-# Install Minio and service
+if [[ ${LINUX} -eq 1 ]]; then
+  ### Create all manifests:
+  # - namespace - must be created first
+  # - halyard
+  # - minio
+  # - clusteradmin
+  # - ingress
+  kubectl apply -f ${BASE_DIR}/manifests/namespace.yml
+  kubectl apply -f ${BASE_DIR}/manifests
+    
+  # if [[ ${LINUX} -eq 1 ]]; then
+  #   kubectl apply -f ${BASE_DIR}/metrics-server/deploy/1.8+/
+  # fi
 
-# Need sudo here cause the kubeconfig is owned by root with 644
-sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
-kubectl apply -f /etc/spinnaker/manifests/metrics-server/deploy/1.8+/
-# kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker-services.yaml
-kubectl apply -f /etc/spinnaker/manifests/expose-spinnaker-ingress.yaml
-kubectl apply -f /etc/spinnaker/manifests/minio.yaml
-kubectl apply -f /etc/spinnaker/manifests/halyard.yaml
+  ######## Bootstrap
+  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+  do
+    echo "Waiting for Halyard pod to start"
+    sleep 2;
+  done
 
-######## Bootstrap
+  sleep 5;
+  HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
+  kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
 
-while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
-do
-echo "Waiting for Halyard pod to start"
-sleep 2;
-done
+  create_hal_shortcut
+  echo 'source <(kubectl completion bash)' >>~/.bashrc
 
-sleep 5;
-HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
-kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+else
+  curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller-mandatory.yaml
+  curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud-generic.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller-generic.yaml
 
-create_hal_shortcut
+  # This hasn't been built yet
+  kubectl --context docker-desktop get ns
+  if [[ $? -eq 0 ]]; then
+    echo "Docker desktop detected"
 
-######### Add kubectl autocomplete
-echo 'source <(kubectl completion bash)' >>~/.bashrc
+    # First two create namespaces, and must be run first
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests/namespace.yml
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests/nginx-ingress-controller-mandatory.yaml
+    kubectl --context docker-desktop apply -f ${BASE_DIR}/manifests
+
+
+    ######## Bootstrap
+    while [[ $(kubectl --context docker-desktop get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+    do
+      echo "Waiting for Halyard pod to start"
+      sleep 2;
+    done
+
+    sleep 5;
+    HALYARD_POD=$(kubectl --context docker-desktop -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
+    kubectl --context docker-desktop -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+
+    # create_hal_shortcut
+    # echo 'source <(kubectl completion bash)' >>~/.bashrc
+  
+  else
+    echo "Docker desktop not detected; bailing."  
+  fi
+fi
