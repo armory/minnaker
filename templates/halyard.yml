@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: halyard
+  namespace: spinnaker
+spec:
+  replicas: 1
+  serviceName: halyard
+  selector:
+    matchLabels:
+      app: halyard
+  template:
+    metadata:
+      labels:
+        app: halyard
+    spec:
+      containers:
+      - name: halyard
+        image: HALYARD_IMAGE
+        volumeMounts:
+        - name: hal
+          mountPath: "/home/spinnaker/.hal"
+        - name: kube
+          mountPath: "/home/spinnaker/.kube"
+        env:
+        - name: HOME
+          value: "/home/spinnaker"
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 65535
+      volumes:
+      - name: hal
+        hostPath:
+          path: BASE_DIR/.hal
+          type: DirectoryOrCreate
+      - name: kube
+        hostPath:
+          path: BASE_DIR/.kube
+          type: DirectoryOrCreate

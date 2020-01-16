@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: spinnaker
+spec:
+  replicas: 1
+  serviceName: minio
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      volumes:
+      - name: storage
+        hostPath:
+          path: BASE_DIR/minio
+          type: DirectoryOrCreate
+      containers:
+      - name: minio
+        image: minio/minio
+        args:
+        - server
+        - /storage
+        env:
+        # MinIO access key and secret key
+        - name: MINIO_ACCESS_KEY
+          value: "minio"
+        - name: MINIO_SECRET_KEY
+          value: "MINIO_PASSWORD"
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - name: storage
+          mountPath: "/storage"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: spinnaker
+spec:
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    app: minio

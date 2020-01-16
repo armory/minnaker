@@ -1,0 +1,2 @@
+
+window.spinnakerSettings.authEnabled = true;
