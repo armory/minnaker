@@ -18,65 +18,61 @@ This is currently intended for POCs and trying out Spinnaker.
 ## Prequisites
 
 * Linux distribution running in a VM or bare metal
-  * 2 vCPUs (recommend 4)
-  * 8Gb of RAM (recommend 16)
-  * 30GB of HDD (recommend 40+)
-  * NAT or Bridged networking with access to the internet
-
-* Install `curl` and `git`:
-  * **Debian**
-    * `sudo apt-get install curl git`
+    * 2 vCPUs (recommend 4)
+    * 8GiB of RAM (recommend 16)
+    * 30GiB of HDD (recommend 40+)
+    * NAT or Bridged networking with access to the internet
+    * Install `curl` and `tar` (if they're not already installed):
+        * `sudo apt-get install curl tar`
+* OSX
+    * Docker Desktop local Kubernetes cluster enabled
+    * At least 6 GiB of memory allocated to Docker Desktop
 
 ---
 
 ## Installation
 
 * Login (SSH) to your VM or bare metal box
-* Clone the minnaker repository
+* Download the minnaker tarball
 
   ```bash
-  git clone https://github.com/armory/minnaker
+  curl -LO https://github.com/armory/minnaker
   ```
 
-* Change the working directory to _minnaker/scripts_
+* Extract the tarball
 
   ```bash
-  cd minnaker/scripts
+  tar -xzvf minnaker.tgz
   ```
 
-* Make the install script executable
+* Change directory
 
   ```bash
-  chmod 775 all.sh
+  cd minnaker
   ```
 
 * Execute the install script (add the `-o` flag if you want OSS Spinnaker)
 
   This will, by default, install Armory Spinnaker and use your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.  If you are installing this on a baremetal or local VM, you should indicate the IP address for your server with the `-p` and `-P` flags (`-p` is the 'Private IP', and must be an IP address that exists on an interface on the machine; `-P` is the 'Public IP' and must be an address or DNS name you will use to access Spinnaker).
 
+  If you would like to install Open Source Spinnaker, use the `-o` flag.
+
   ```bash
-  ./all.sh
+  scripts/install.sh
   ```
 
   For example, to install OSS Spinnaker on a VM with the IP address of `192.168.10.1`, you could do something like this:
 
   ```bash
-  export PRIVATE_IP=192.168.10.1
-  export PUBLIC_IP=54.252.234.226
-  ./all.sh -o -P $PUBLIC_IP -p $PRIVATE_IP
+  export PUBLIC_ENDPOINT=192.168.10.1
+  ./install.sh -o -P $PUBLIC_ENDPOINT
   ```
 
 * Installation will continue and take about 5-10 minutes to complete, depending on VM size
 
 ## Accessing Spinnaker
 
-* Determine your IP_ADDR
-
-  ```bash
-  hostname -I
-  ```
-
-  Alternately, run this command:
+  Determine the public endpoint for Spinnaker
 
   ```bash
   grep override /etc/spinnaker/.hal/config
@@ -130,12 +126,9 @@ Notes:
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to update Spinnaker with the new IP address(es):
 
   * If the public IP address has changed:
-    * Update `/etc/spinnaker/.hal/public_ip` with the new public IP address
-    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
-    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
-  * If the private IP address has changed:
-    * Update `/etc/spinnaker/.hal/private_ip` with the new private IP address
-    * Update the kubeconfigs at `/etc/spinnaker/.kube/config` and `/etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa` with the new private IP address (in the `.clusters.cluster.server` field)
+    * Update `/etc/spinnaker/.hal/public_endpoint` with the new public IP address
+    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
+    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
   * Run `hal deploy apply`
 
 * Certificate support isn't yet documented.  Many ways to achieve this:
