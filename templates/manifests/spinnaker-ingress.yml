@@ -15,9 +15,6 @@ spec:
           serviceName: spin-deck
           servicePort: 9000
         path: /
-  - 
-    http:
-      paths:
       - backend:
           serviceName: spin-gate
           servicePort: 8084
