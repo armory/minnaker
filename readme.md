@@ -66,7 +66,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 5. Execute the install script. Note the following options before running the script:
      * Add the `-o` flag if you want to install open source Spinnaker.
      * By default, the script installs Armory Spinnaker and uses your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.
-     * For bare metal or a local VM, specify the IP address for your server with the `-p` and `-P` flags. `-p` is the 'Private IP' and must be an IP address that exists on an interface on the machine. `-P` is the 'Public IP' and must be an address or DNS name you will use to access Spinnaker.
+     * For bare metal or a local VM, specify the IP address for your server with `-P` flag. `-P` is the 'Public Endpoint' and must be an address or DNS name you will use to access Spinnaker (an IP address reachable by your end users).
 
     ```bash
     ./all.sh
@@ -80,6 +80,16 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     ```
 
     Installation can take between 5-10 minutes to complete depending on VM size.
+
+6. Once Minnaker is up and running, you can make changes to its configuration using `hal`.  For example, to change the version of Spinnaker that is installed, you can use this:
+
+    ```bash
+    hal config version edit --version 2.17.4
+
+    hal deploy apply
+    ```
+
+    *By default, Minnaker will install the latest GA version of Spinnaker available.*
 
 ## Accessing Spinnaker
 
