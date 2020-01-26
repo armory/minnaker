@@ -45,22 +45,22 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 ## Installation
 
 1. Login (SSH) to your VM or bare metal box.
-2. Clone the minnaker repository:
+2. Download the minnaker tarball:
 
     ```bash
-    git clone https://github.com/armory/minnaker
+    curl -LO https://github.com/armory/minnaker/releases/download/0.0.1/minnaker.tgz
     ```
 
-3. Change the working directory to _minnaker/scripts_:
+3. Untar the tarball (will create a `./minnaker` directory in your current working directory):
 
     ```bash
-    cd minnaker/scripts
+    tar -xzvf minnaker.tgz
     ```
 
-4. Make the install script executable:
+4. Change into the directory:
 
     ```bash
-    chmod 775 all.sh
+    cd minnaker
     ```
 
 5. Execute the install script. Note the following options before running the script:
