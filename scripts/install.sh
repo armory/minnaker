@@ -304,7 +304,7 @@ if [[ ${LINUX} -eq 1 ]]; then
   sudo chown -R 1000 ${BASE_DIR}
 
   install_k3s
-  install_git
+  # install_git
   # get_metrics_server_manifest
 
   detect_endpoint
