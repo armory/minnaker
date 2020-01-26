@@ -95,7 +95,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Accessing Spinnaker
 
-  Determine the public endpoint for Spinnaker
+1.  Determine the public endpoint for Spinnaker
 
     ```bash
     grep override /etc/spinnaker/.hal/config
