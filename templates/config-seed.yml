@@ -27,6 +27,7 @@ deploymentConfigurations:
       secretAccessKey: MINIO_PASSWORD
   features:
     artifacts: true
+    artifactsRewrite: true
   security:
     apiSecurity:
       ssl:
