@@ -82,6 +82,7 @@ export PATH
 generate_passwords
 
 # update_minio_password
+touch ${BASE_DIR}/.hal/password_generated
 update_spinnaker_password
 
 apply_changes
