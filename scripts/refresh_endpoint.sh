@@ -44,8 +44,22 @@ update_endpoint () {
 }
 
 apply_changes () {
-  kubectl apply -f ${BASE_DIR}/manifests/minio.yml
-  kubectl -n spinnaker exec -it halyard-0 hal deploy apply
+  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+  do
+    echo "Waiting for Halyard pod to start"
+    sleep 2;
+  done
+
+  # We do this twice, because for some reason Kubernetes sometimes reports pods as healthy on first start after a reboot
+  sleep 15
+
+  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
+  do
+    echo "Waiting for Halyard pod to start"
+    sleep 2;
+  done
+
+  kubectl -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
 }
 
 PUBLIC_ENDPOINT=""
