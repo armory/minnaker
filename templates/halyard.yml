@@ -26,6 +26,17 @@ spec:
         env:
         - name: HOME
           value: "/home/spinnaker"
+        ports:
+        - containerPort: 8064
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - wget
+            - --no-check-certificate
+            - --spider
+            - -q
+            - http://localhost:8064/health
       securityContext:
         runAsUser: 1000
         runAsGroup: 65535
