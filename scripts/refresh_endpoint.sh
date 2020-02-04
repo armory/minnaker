@@ -13,17 +13,9 @@ set -e
 ##### Functions
 print_help () {
   set +x
-  echo "Usage: reset.sh"
+  echo "Usage: refresh_endpoint.sh"
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
   set -x
-}
-
-generate_passwords () {
-  echo "Generating Minio password (${BASE_DIR}/.hal/.secret/minio_password):"
-  openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/minio_password
-
-  echo "Generating Spinnaker password (${BASE_DIR}/.hal/.secret/spinnaker_password):"
-  openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/spinnaker_password
 }
 
 detect_endpoint () {
@@ -43,17 +35,6 @@ detect_endpoint () {
   else
     echo "Using previously defined public endpoint $(cat ${BASE_DIR}/.hal/public_endpoint)"
   fi
-}
-
-update_minio_password () {
-  MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-  yq w -i ${BASE_DIR}/manifests/minio.yml spec.template.spec.containers[0].env[1].value ${MINIO_PASSWORD}
-  yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].persistentStorage.s3.secretAccessKey ${MINIO_PASSWORD}
-}
-
-update_spinnaker_password () {
-  SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
-  yq w -i ${BASE_DIR}/.hal/default/profiles/gate-local.yml security.user.password ${SPINNAKER_PASSWORD}
 }
 
 update_endpoint () {
@@ -100,11 +81,7 @@ done
 PATH=${PATH}:/usr/local/bin
 export PATH
 
-generate_passwords
 detect_endpoint
-
-update_minio_password
-update_spinnaker_password
 update_endpoint
 
 apply_changes
