@@ -150,11 +150,10 @@ print_manifests () {
   fi
 }
 
-print_bootstrap_script () {
-  cp ${PROJECT_DIR}/templates/.hal/start.sh ${BASE_DIR}/.hal/start.sh
-  chmod +x ${BASE_DIR}/.hal/start.sh
-}
-
+# print_bootstrap_script () {
+#   cp ${PROJECT_DIR}/templates/.hal/start.sh ${BASE_DIR}/.hal/start.sh
+#   chmod +x ${BASE_DIR}/.hal/start.sh
+# }
 
 hydrate_manifest_halyard () {
   if [[ ! -e ${BASE_DIR}/manifests/halyard.yml ]]; then
@@ -334,7 +333,7 @@ fi
 generate_passwords
 print_templates
 print_manifests
-print_bootstrap_script
+# print_bootstrap_script
 
 hydrate_manifest_halyard
 hydrate_manifest_minio
@@ -363,11 +362,19 @@ if [[ ${LINUX} -eq 1 ]]; then
   done
 
   sleep 15;
-  HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
-  kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+  # HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
+  # kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+  VERSION=$(kubectl -n spinnaker exec -it halyard-0 -- hal version latest -q)
+  kubectl -n spinnaker exec -it halyard-0 -- hal config version edit --version ${VERSION}
+  kubectl -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
 
   create_hal_shortcut
   echo 'source <(kubectl completion bash)' >>~/.bashrc
+
+  set +x
+  echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
+  echo "username: 'admin'"
+  echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
 
 else
   curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller-mandatory.yaml
@@ -391,12 +398,18 @@ else
       sleep 2;
     done
 
-    sleep 5;
-    HALYARD_POD=$(kubectl --context docker-desktop -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
-    kubectl --context docker-desktop -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
+    sleep 15;
+    VERSION=$(kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal version latest -q)
+    kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal config version edit --version ${VERSION}
+    kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
 
     # create_hal_shortcut
     # echo 'source <(kubectl completion bash)' >>~/.bashrc
+
+    set +x
+    echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
+    # echo "username: 'admin'"
+    # echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
   
   else
     echo "Docker desktop not detected; bailing."  
