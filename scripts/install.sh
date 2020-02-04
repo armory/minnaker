@@ -22,7 +22,7 @@ set -e
 ##### Functions
 print_help () {
   set +x
-  echo "Usage: all.sh"
+  echo "Usage: install.sh"
   echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
@@ -49,6 +49,11 @@ install_git () {
   set -e
 }
 
+install_yq () {
+  sudo curl -sfL https://github.com/mikefarah/yq/releases/download/3.0.1/yq_linux_amd64 -o /usr/local/bin/yq
+  sudo chmod +x /usr/local/bin/yq
+}
+
 get_metrics_server_manifest () {
 # TODO: detect existence and skip if existing
   rm -rf ${BASE_DIR}/manifests/metrics-server
@@ -60,6 +65,7 @@ detect_endpoint () {
     if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
       echo "Using provided public IP ${PUBLIC_ENDPOINT}"
       echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
+      touch ${BASE_DIR}/.hal/public_endpoint_provided
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
         echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
@@ -260,7 +266,7 @@ while [ "$#" -gt 0 ]; do
         PUBLIC_ENDPOINT=$2
         shift
       else
-        printf "Error: --public-ip requires an IP address >&2"
+        printf "Error: --public-endpoint requires an IP address >&2"
         exit 1
       fi
       ;;
@@ -355,7 +361,7 @@ if [[ ${LINUX} -eq 1 ]]; then
     sleep 2;
   done
 
-  sleep 5;
+  sleep 15;
   HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
   kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
 
