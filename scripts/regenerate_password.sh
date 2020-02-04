@@ -52,7 +52,7 @@ apply_changes () {
     sleep 2;
   done
 
-  kubectl -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
+  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
 }
 
 # PUBLIC_ENDPOINT=""

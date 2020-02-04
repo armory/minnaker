@@ -68,8 +68,11 @@ detect_endpoint () {
       touch ${BASE_DIR}/.hal/public_endpoint_provided
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
-        curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
+        while [[ ! -f ${BASE_DIR}/.hal/public_endpoint || $(wc -l < ${BASE_DIR}/.hal/public_endpoint) -eq 0 ]]; do
+          echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+          sleep 1
+          curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
+        done
       else
         echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
         ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_endpoint
@@ -227,7 +230,7 @@ sudo tee /usr/local/bin/hal <<-'EOF'
 POD_NAME=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
 # echo $POD_NAME
 set -x
-kubectl -n spinnaker exec -it ${POD_NAME} -- hal $@
+kubectl -n spinnaker exec -i ${POD_NAME} -- hal $@
 EOF
 
 sudo chmod 755 /usr/local/bin/hal
@@ -364,9 +367,9 @@ if [[ ${LINUX} -eq 1 ]]; then
   sleep 15;
   # HALYARD_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f2)
   # kubectl -n spinnaker exec -it ${HALYARD_POD} /home/spinnaker/.hal/start.sh
-  VERSION=$(kubectl -n spinnaker exec -it halyard-0 -- hal version latest -q)
-  kubectl -n spinnaker exec -it halyard-0 -- hal config version edit --version ${VERSION}
-  kubectl -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
+  VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- hal version latest -q)
+  kubectl -n spinnaker exec -i halyard-0 -- hal config version edit --version ${VERSION}
+  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
 
   create_hal_shortcut
   echo 'source <(kubectl completion bash)' >>~/.bashrc
@@ -399,9 +402,9 @@ else
     done
 
     sleep 15;
-    VERSION=$(kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal version latest -q)
-    kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal config version edit --version ${VERSION}
-    kubectl --context docker-desktop -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
+    VERSION=$(kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal version latest -q)
+    kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal config version edit --version ${VERSION}
+    kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
 
     # create_hal_shortcut
     # echo 'source <(kubectl completion bash)' >>~/.bashrc

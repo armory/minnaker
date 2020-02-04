@@ -25,8 +25,13 @@ detect_endpoint () {
     touch ${BASE_DIR}/.hal/public_endpoint_provided
   elif [[ ! -f ${BASE_DIR}/.hal/public_endpoint_provided ]]; then
     if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-      echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
-      curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
+      # Remove the entry
+      >${BASE_DIR}/.hal/public_endpoint
+      while [[ ! -f ${BASE_DIR}/.hal/public_endpoint || $(wc -l < ${BASE_DIR}/.hal/public_endpoint) -eq 0 ]]; do
+        echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+        sleep 1
+        curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
+      done
     else
       echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
       ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_endpoint
@@ -59,7 +64,7 @@ apply_changes () {
     sleep 2;
   done
 
-  kubectl -n spinnaker exec -it halyard-0 -- hal deploy apply --wait-for-completion
+  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
 }
 
 PUBLIC_ENDPOINT=""
