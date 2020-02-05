@@ -52,7 +52,7 @@ apply_changes () {
     sleep 2;
   done
 
-  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
+  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply
 }
 
 # PUBLIC_ENDPOINT=""
@@ -84,6 +84,10 @@ generate_passwords
 # update_minio_password
 touch ${BASE_DIR}/.hal/password_generated
 update_spinnaker_password
+
+kubectl delete pods --all -A --force --grace-period=0
+
+sleep 10
 
 apply_changes
 
