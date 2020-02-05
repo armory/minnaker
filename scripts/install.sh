@@ -123,6 +123,11 @@ print_templates () {
   cp ${PROJECT_DIR}/templates/halyard.yml ${BASE_DIR}/templates/halyard.yml
   cp ${PROJECT_DIR}/templates/minio.yml ${BASE_DIR}/templates/minio.yml
   cp ${PROJECT_DIR}/templates/config-seed.yml ${BASE_DIR}/templates/config-seed
+
+  if [[ ${OPEN_SOURCE} -eq 0 ]]; then
+    cat ${PROJECT_DIR}/templates/config-seed-armory.yml >> ${BASE_DIR}/templates/config-seed
+  fi
+
   cp ${PROJECT_DIR}/templates/profiles/gate-local.yml ${BASE_DIR}/templates/profiles/gate-local.yml
 
   if [[ ${LINUX} -eq 1 ]]; then
@@ -188,6 +193,7 @@ hydrate_and_seed_halconfig () {
     sed \
       -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
       -e "s|PUBLIC_ENDPOINT|${PUBLIC_ENDPOINT}|g" \
+      -e "s|uuid.*|uuid: cafed00d$(uuidgen | cut -c 9-)|g" \
     ${BASE_DIR}/templates/config-seed \
     | tee ${BASE_DIR}/templates/config
 
@@ -364,20 +370,20 @@ if [[ ${LINUX} -eq 1 ]]; then
     sleep 5;
   done
 
-  sleep 15;
+  sleep 5;
   VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- hal version latest -q)
   kubectl -n spinnaker exec -i halyard-0 -- hal config version edit --version ${VERSION}
   kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply
   # Note: --wait-for-completion causes lots of issues with Packer
   # kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion > /dev/null
 
-  sleep 15;
+  sleep 5;
 
   while [[ $(kubectl -n spinnaker get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
   do
     echo "Waiting for all containers to be Running"
     kubectl -n spinnaker get pods
-    sleep 30
+    sleep 5
   done
 
   kubectl -n spinnaker get pods
@@ -413,7 +419,7 @@ else
       sleep 5;
     done
 
-    sleep 15;
+    sleep 5;
     VERSION=$(kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal version latest -q)
     kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal config version edit --version ${VERSION}
     kubectl --context docker-desktop -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion
