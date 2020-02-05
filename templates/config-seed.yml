@@ -41,3 +41,5 @@ deploymentConfigurations:
     http:
       enabled: true
       accounts: []
+  telemetry:
+    enabled: true
