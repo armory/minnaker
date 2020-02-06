@@ -82,14 +82,27 @@ export PATH
 generate_passwords
 
 # update_minio_password
-touch ${BASE_DIR}/.hal/password_generated
 update_spinnaker_password
+
+kubectl get apiservice
+
+while [[ $(kubectl get apiservice | grep False | wc -l) -ne 0 ]];
+do
+  echo "Waiting for K3s to be up"
+  sleep 5;
+done
+
+kubectl get apiservice
+
+sleep 10
 
 kubectl delete pods --all -A --force --grace-period=0
 
 sleep 10
 
 apply_changes
+
+touch ${BASE_DIR}/.hal/password_generated
 
 echo "https://$(cat /etc/spinnaker/.hal/public_endpoint)"
 echo "username: 'admin'"
