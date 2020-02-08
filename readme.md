@@ -19,18 +19,18 @@ Minnaker performs the following actions when run on a single Linux instance:
 
 To use Minnaker, make sure your Linux instance meets the following requirements:
 
-* Ubuntu 18.04 or Debian 10 (VM or bare metal)
-* 2 vCPUs (recommend 4)
-* 8Gb of RAM (recommend 16)
-* 30GB of HDD (recommend 40+)
-* NAT or Bridged networking with access to the internet
-* `curl` and `git` are available. For example, to install `curl` and `git` on Debian, run the following command:
-  
-    ```
-    sudo apt-get install curl git
-    ```
-
-* Port `443` on your VM needs to be accessible from your workstation / browser. By default, Minnaker installs Spinnaker and configures it to listen on port `443`, using paths `/` and `/api/v1`(for the UI and API).
+* Linux distribution running in a VM or bare metal
+    * Ubuntu 18.04 or Debian 10 (VM or bare metal)
+    * 2 vCPUs (recommend 4)
+    * 8GiB of RAM (recommend 16)
+    * 30GiB of HDD (recommend 40+)
+    * NAT or Bridged networking with access to the internet
+    * Install `curl` and `tar` (if they're not already installed):
+        * `sudo apt-get install curl tar`
+    * Port `443` on your VM needs to be accessible from your workstation / browser. By default, Minnaker installs Spinnaker and configures it to listen on port `443`, using paths `/` and `/api/v1`(for the UI and API).
+* OSX
+    * Docker Desktop local Kubernetes cluster enabled
+    * At least 6 GiB of memory allocated to Docker Desktop
 
 
 ## Changelog 
@@ -45,22 +45,22 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 ## Installation
 
 1. Login (SSH) to your VM or bare metal box.
-2. Clone the minnaker repository:
+2. Download the minnaker tarball:
 
     ```bash
-    git clone https://github.com/armory/minnaker
+    curl -LO https://github.com/armory/minnaker/releases/download/0.0.7/minnaker.tgz
     ```
 
-3. Change the working directory to _minnaker/scripts_:
+3. Untar the tarball (will create a `./minnaker` directory in your current working directory):
 
     ```bash
-    cd minnaker/scripts
+    tar -xzvf minnaker.tgz
     ```
 
-4. Make the install script executable:
+4. Change into the directory:
 
     ```bash
-    chmod 775 all.sh
+    cd minnaker
     ```
 
 5. Execute the install script. Note the following options before running the script:
@@ -69,14 +69,16 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
      * For bare metal or a local VM, specify the IP address for your server with `-P` flag. `-P` is the 'Public Endpoint' and must be an address or DNS name you will use to access Spinnaker (an IP address reachable by your end users).
 
     ```bash
-    ./all.sh
+    ./scripts/install.sh
     ```
+
+    If you would like to install Open Source Spinnaker, use the `-o` flag.
 
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
     ```bash
     export PRIVATE_ENDPOINT=192.168.10.1
-    ./all.sh -o -P $PRIVATE_ENDPOINT
+    ./scripts/install.sh -o -P $PRIVATE_ENDPOINT
     ```
 
     Installation can take between 5-10 minutes to complete depending on VM size.
@@ -93,13 +95,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Accessing Spinnaker
 
-1. Determine your IP_ADDR. On the Linux host, run the following command:
-
-    ```bash
-    hostname -I
-    ```
-
-    Alternately, run this command:
+1.  Determine the public endpoint for Spinnaker
 
     ```bash
     grep override /etc/spinnaker/.hal/config
@@ -153,13 +149,10 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to update Spinnaker with the new IP address(es):
 
   * If the public IP address has changed:
-    * Update `/etc/spinnaker/.hal/public_ip` with the new public IP address
-    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
-    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for `overrideBaseUrl` fields) (if you haven't switch to DNS)
-  * If the private IP address has changed:
-    * Update `/etc/spinnaker/.hal/private_ip` with the new private IP address
-    * Update the kubeconfigs at `/etc/spinnaker/.kube/config` and `/etc/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa` with the new private IP address (in the `.clusters.cluster.server` field)
-  * After you update the IP address, run `hal deploy apply`
+    * Update `/etc/spinnaker/.hal/public_endpoint` with the new public IP address
+    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
+    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
+  * Run `hal deploy apply`
 
 * Certificate support isn't yet documented.  There are several ways to achieve this:
   * Using actual cert files: create certs that Traefik can use in the ingress definition(s)

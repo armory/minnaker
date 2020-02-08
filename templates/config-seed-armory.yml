@@ -1,0 +1,6 @@
+  armory:
+    diagnostics:
+      enabled: true
+      uuid: cafed00d
+      logging:
+        enabled: true

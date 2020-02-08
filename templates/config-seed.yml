@@ -1,14 +1,14 @@
 currentDeployment: default
 deploymentConfigurations:
 - name: default
-  version: 2.15.0
+  version: 2.17.1
   providers:
     kubernetes:
       enabled: true
       accounts:
       - name: spinnaker
         providerVersion: V2
-        kubeconfigFile: /home/spinnaker/.hal/.secret/kubeconfig-spinnaker-sa
+        serviceAccount: true
         onlySpinnakerManaged: true
       primaryAccount: spinnaker
   deploymentEnvironment:
@@ -22,21 +22,24 @@ deploymentConfigurations:
       bucket: spinnaker
       rootFolder: front50
       pathStyleAccess: true
-      endpoint: http://minio.minio:9000
+      endpoint: http://minio.spinnaker:9000
       accessKeyId: minio
       secretAccessKey: MINIO_PASSWORD
   features:
     artifacts: true
+    artifactsRewrite: true
   security:
     apiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://52.12.205.43:8084
+      overrideBaseUrl: https://PUBLIC_ENDPOINT/api/v1
     uiSecurity:
       ssl:
         enabled: false
-      overrideBaseUrl: http://52.12.205.43
+      overrideBaseUrl: https://PUBLIC_ENDPOINT
   artifacts:
     http:
       enabled: true
       accounts: []
+  telemetry:
+    enabled: true
