@@ -346,7 +346,7 @@ Then the Spinnaker pipeline will:
 * Replace the `hello-world/nginx` with the reference from your passed-in artifact
 * Deploy the hydrated manifest
 
-## Put a Kubernetes Manifest in GitHub
+## Put the Kubernetes Manifest in GitHub
 
 Go into Spinnaker to your pipeline, and grab the Kubernetes manifest
 
@@ -381,7 +381,9 @@ spec:
 * Select "Artifact" for the "Manifest Source"
 * Select "Define New Artifact".  Populate these fields:
     * Account: "my-github-credential" (or whatever you specified for the credential name)
-    * Content URL: `https://api.github.com/repos/$ORG/$REPO/contents/$FILEPATH` (Replace org and repo with your org and repo, and filepath with your file path - something like this: `https://api.github.com/repos/baxterthehacker/public-repo/contents/path/to/file.yml`.  If you're on GHE, this will be something like this: `https://github.mydomain.com/api/v3/repos/baxterthehacker/public-repo/contents/path/to/file.yml`)
+    * Content URL: `https://api.github.com/repos/$ORG/$REPO/contents/$FILEPATH` (`https://github.mydomain.com/api/v3/repos/$ORG/$REPO/$FILEPATH` for GHE).  Replace the org, repo, and filepath with relevant entries for your file.  For example:
+        * GitHub.com: `https://api.github.com/repos/baxterthehacker/public-repo/contents/path/to/file.yml`.
+        * GHE: `https://github.mydomain.com/api/v3/repos/baxterthehacker/public-repo/contents/path/to/file.yml`)
 
 Save the pipeline, and re-trigger the Jenkins build.  This should do the following:
 
