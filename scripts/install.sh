@@ -371,11 +371,11 @@ if [[ ${LINUX} -eq 1 ]]; then
   done
 
   sleep 5;
-  VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- hal version latest -q)
-  kubectl -n spinnaker exec -i halyard-0 -- hal config version edit --version ${VERSION}
-  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply
+  VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal version latest -q")
+  kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
+  kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply"
   # Note: --wait-for-completion causes lots of issues with Packer
-  # kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply --wait-for-completion > /dev/null
+  # kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply --wait-for-completion > /dev/null"
 
   sleep 5;
 
