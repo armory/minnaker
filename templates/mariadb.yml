@@ -1,0 +1,50 @@
+# Do not use this, permissions are not currently set up correctly
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  namespace: spinnaker
+spec:
+  replicas: 1
+  serviceName: mariadb
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:10.4.12-bionic
+        volumeMounts:
+        - name: mysql
+          mountPath: "/var/lib/mysql"
+        env:
+        # - name: HOME
+        #   value: "/home/spinnaker"
+        - name: MYSQL_ROOT_PASSWORD
+          value: "MYSQL_PASSWORD"
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+      volumes:
+      - name: mysql
+        hostPath:
+          path: BASE_DIR/mysql
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: spinnaker
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: mariadb

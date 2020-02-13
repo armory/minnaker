@@ -31,7 +31,7 @@ print_help () {
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.0.0" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.0.1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 # Todo: Support multiple installation methods (apt, etc.)
@@ -93,6 +93,13 @@ generate_passwords () {
     echo "Minio password already exists (${BASE_DIR}/.hal/.secret/minio_password)"
   fi
 
+  if [[ ! -f ${BASE_DIR}/.hal/.secret/mysql_password ]]; then
+    echo "Generating MariaDB (MySQL) password (${BASE_DIR}/.hal/.secret/mysql_password):"
+    openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/mysql_password
+  else
+    echo "MariaDB (MySQL) password already exists (${BASE_DIR}/.hal/.secret/mysql_password)"
+  fi
+
   if [[ ! -f ${BASE_DIR}/.hal/.secret/spinnaker_password ]]; then
     echo "Generating Spinnaker password (${BASE_DIR}/.hal/.secret/spinnaker_password):"
     openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/spinnaker_password
@@ -121,7 +128,9 @@ print_templates () {
   #   - health check path
 
   cp ${PROJECT_DIR}/templates/halyard.yml ${BASE_DIR}/templates/halyard.yml
-  cp ${PROJECT_DIR}/templates/minio.yml ${BASE_DIR}/templates/minio.yml
+  # Halyard will use hostPath for easy manipulation; MariaDB and Minio will use PVCs for permissions and things
+  cp ${PROJECT_DIR}/templates/mariadb-with-pvc.yml ${BASE_DIR}/templates/mariadb.yml
+  cp ${PROJECT_DIR}/templates/minio-with-pvc.yml ${BASE_DIR}/templates/minio.yml
   cp ${PROJECT_DIR}/templates/config-seed.yml ${BASE_DIR}/templates/config-seed
 
   if [[ ${OPEN_SOURCE} -eq 0 ]]; then
@@ -176,6 +185,7 @@ hydrate_manifest_halyard () {
 hydrate_manifest_minio () {
   MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 
+  # We actually don't need the sed entry for BASE_DIR anymore, but leaving for later
   if [[ ! -e ${BASE_DIR}/manifests/minio.yml ]]; then
     sed \
       -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
@@ -185,12 +195,28 @@ hydrate_manifest_minio () {
   fi
 }
 
+hydrate_manifest_mariadb () {
+  MYSQL_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/mysql_password)
+
+  # We actually don't need the sed entry for BASE_DIR anymore, but leaving for later
+  if [[ ! -e ${BASE_DIR}/manifests/mariadb.yml ]]; then
+    sed \
+      -e "s|MYSQL_PASSWORD|${MYSQL_PASSWORD}|g" \
+      -e "s|BASE_DIR|${BASE_DIR}|g" \
+    ${BASE_DIR}/templates/mariadb.yml \
+    | tee ${BASE_DIR}/manifests/mariadb.yml
+  fi
+}
+
 hydrate_and_seed_halconfig () {
+  # MySQL password is not yet used
   MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
+  MYSQL_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/mysql_password)
   PUBLIC_ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
 
   # Hydrate (dynamic) config seed with minio password and public IP
     sed \
+      -e "s|MYSQL_PASSWORD|${MYSQL_PASSWORD}|g" \
       -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
       -e "s|PUBLIC_ENDPOINT|${PUBLIC_ENDPOINT}|g" \
       -e "s|uuid.*|uuid: cafed00d$(uuidgen | cut -c 9-)|g" \
@@ -346,6 +372,7 @@ print_manifests
 
 hydrate_manifest_halyard
 hydrate_manifest_minio
+hydrate_manifest_mariadb
 hydrate_and_seed_halconfig
 hydrate_profiles_and_service_settings
 
