@@ -48,7 +48,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 2. Download the minnaker tarball:
 
     ```bash
-    curl -LO https://github.com/armory/minnaker/releases/download/0.0.7/minnaker.tgz
+    curl -LO https://github.com/armory/minnaker/releases/download/0.0.8/minnaker.tgz
     ```
 
 3. Untar the tarball (will create a `./minnaker` directory in your current working directory):
