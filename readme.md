@@ -32,6 +32,8 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     * Docker Desktop local Kubernetes cluster enabled
     * At least 6 GiB of memory allocated to Docker Desktop
 
+* On Ubuntu, the Minnaker installer will install K3s for you (a minimal installation of Kubernetes), so you do not have to pre-install Docker or Kubernetes.
+
 
 ## Changelog 
 
