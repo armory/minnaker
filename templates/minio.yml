@@ -15,11 +15,6 @@ spec:
       labels:
         app: minio
     spec:
-      volumes:
-      - name: storage
-        hostPath:
-          path: BASE_DIR/minio
-          type: DirectoryOrCreate
       containers:
       - name: minio
         image: minio/minio
@@ -37,6 +32,11 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: "/storage"
+      volumes:
+      - name: storage
+        hostPath:
+          path: BASE_DIR/minio
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
