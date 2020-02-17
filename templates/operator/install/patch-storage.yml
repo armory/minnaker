@@ -1,0 +1,16 @@
+apiVersion: spinnaker.armory.io/v1alpha2
+kind: SpinnakerService
+metadata:
+  name: spinnaker
+spec:
+  spinnakerConfig:
+    config:
+      persistentStorage:
+        persistentStoreType: s3
+        s3:
+          bucket: spinnaker
+          rootFolder: front50
+          pathStyleAccess: true
+          endpoint: http://minio.spinnaker:9000
+          accessKeyId: minio
+          secretAccessKey: MINIO_PASSWORD
