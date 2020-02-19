@@ -426,35 +426,7 @@ if [[ ${LINUX} -eq 1 ]]; then
   echo "username: 'admin'"
   echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
 
-  exit 0
-
-  ######## Bootstrap
-  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
-  do
-    echo "Waiting for Halyard pod to start"
-    sleep 5;
-  done
-
-  sleep 5;
-  VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal version latest -q")
-  kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
-  kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply"
-  # Note: --wait-for-completion causes lots of issues with Packer
-  # kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply --wait-for-completion > /dev/null"
-
-  sleep 5;
-
-  while [[ $(kubectl -n spinnaker get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
-  do
-    echo "Waiting for all containers to be Running"
-    kubectl -n spinnaker get pods
-    sleep 5
-  done
-
   kubectl -n spinnaker get pods
-
-  create_hal_shortcut
-  echo 'source <(kubectl completion bash)' >>~/.bashrc
 
   set +x
   echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n spinnaker get pods'"
