@@ -1,0 +1,16 @@
+apiVersion: spinnaker.armory.io/v1alpha2
+kind: SpinnakerService
+metadata:
+  name: spinnaker
+spec:
+  spinnakerConfig:
+    config:
+      providers:
+        kubernetes:
+          enabled: true
+          accounts:
+          - name: spinnaker
+            providerVersion: V2
+            serviceAccount: true
+            onlySpinnakerManaged: true
+          primaryAccount: spinnaker
