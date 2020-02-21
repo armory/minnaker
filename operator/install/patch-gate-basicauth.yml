@@ -1,0 +1,13 @@
+apiVersion: spinnaker.armory.io/v1alpha2
+kind: SpinnakerService
+metadata:
+  name: spinnaker  # name doesn't matter since this is a patch
+spec:
+  spinnakerConfig:
+    profiles:
+      gate:
+        security:
+          basicform:
+            enabled: true
+          user:
+            name: admin

@@ -1,0 +1,14 @@
+apiVersion: spinnaker.armory.io/v1alpha2
+kind: SpinnakerService
+metadata:
+  name: spinnaker
+spec:
+  spinnakerConfig:
+    profiles:
+      gate:
+        server:
+          servlet:
+            context-path: /api/v1
+    service-settings:
+      gate:
+        healthEndpoint: /api/v1/health

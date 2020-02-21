@@ -7,10 +7,6 @@ spec:
     config:
       security:
         apiSecurity:
-          ssl:
-            enabled: false
           overrideBaseUrl: https://ENDPOINT/api/v1
         uiSecurity:
-          ssl:
-            enabled: false
           overrideBaseUrl: https://ENDPOINT

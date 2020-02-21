@@ -4,5 +4,7 @@ metadata:
   name: spinnaker
 spec:
   spinnakerConfig:
-    config:
-      version: 2.17.5
+    service-settings:
+      clouddriver:
+        kubernetes:
+          serviceAccountName: clouddriver

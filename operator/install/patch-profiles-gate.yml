@@ -1,0 +1,14 @@
+apiVersion: spinnaker.armory.io/v1alpha2
+kind: SpinnakerService
+metadata:
+  name: spinnaker
+spec:
+  spinnakerConfig:
+    profiles:
+      gate:
+        server:
+          tomcat:
+            protocolHeader: X-Forwarded-Proto
+            remoteIpHeader: X-Forwarded-For
+            internalProxies: .*
+            httpsServerPort: X-Forwarded-Port

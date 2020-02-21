@@ -13,4 +13,6 @@ spec:
           pathStyleAccess: true
           endpoint: http://minio.spinnaker:9000
           accessKeyId: minio
-          secretAccessKey: MINIO_PASSWORD
+    profiles:
+      front50:
+        spinnaker.s3.versioning: false
