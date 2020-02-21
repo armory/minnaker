@@ -273,10 +273,11 @@ if [[ ${LINUX} -eq 1 ]]; then
   kubectl apply -k ${BASE_DIR}/operator/install/
 
   set +x
-  echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n spinnaker get pods'"
+  echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -A get pods'"
   echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
   echo "username: 'admin'"
   echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
 
-  kubectl -n spinnaker get pods
+  sleep 5
+  kubectl -A get pods
 fi
