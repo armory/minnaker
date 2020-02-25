@@ -34,7 +34,6 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 * On Ubuntu, the Minnaker installer will install K3s for you (a minimal installation of Kubernetes), so you do not have to pre-install Docker or Kubernetes.
 
-
 ## Changelog 
 
 * As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
@@ -144,6 +143,12 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     For more information about open source Halyard, see [Halyard commands](https://www.spinnaker.io/reference/halyard/commands/).    
   
 4. When finished, use the `exit` command to leave the pod.
+
+## Next Steps
+
+After you finish your installation of Minnaker, go through our [AWS QuickStart](https://docs.armory.io/spinnaker/Armory-Spinnaker-Quickstart-1/) to learn how to deploy applications to AWS with Spinnaker.
+
+Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 
 ## Details
