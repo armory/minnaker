@@ -148,7 +148,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 After you finish your installation of Minnaker, go through our [AWS Quickstart](https://docs.armory.io/spinnaker/Armory-Spinnaker-Quickstart-1/) to learn how to deploy applications to AWS with Spinnaker.
 
-Alternatively, take a look at the available Minnaker [guides](/guides/)
+Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 
 ## Details
