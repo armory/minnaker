@@ -406,6 +406,10 @@ if [[ ${LINUX} -eq 1 ]]; then
 
   sleep 5;
 
+  echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
+  echo "username: 'admin'"
+  echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
+
   while [[ $(kubectl -n spinnaker get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
   do
     echo "Waiting for all containers to be Running"
