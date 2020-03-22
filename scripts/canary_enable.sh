@@ -17,11 +17,13 @@ hal config canary edit --default-metrics-store prometheus
 hal config canary edit --default-metrics-account prometheus
 hal config canary edit --default-storage-account minio
 
+# Extra blank lines are intentional
 tee -a /etc/spinnaker/.hal/default/profiles/gate-local.yml <<-'EOF'
 
 services:
   kayenta:
     canaryConfigStore: true
+
 EOF
 
 hal deploy apply

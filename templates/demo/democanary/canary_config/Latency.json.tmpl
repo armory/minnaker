@@ -1,0 +1,48 @@
+{
+  "createdTimestamp": __TIMESTAMP__,
+  "updatedTimestamp": __TIMESTAMP__,
+  "createdTimestampIso": "__ISO_TIMESTAMP__",
+  "updatedTimestampIso": "__ISO_TIMESTAMP__",
+  "name": "Latency",
+  "id": "${CANARY_CONFIG_UUID}",
+  "description": "Latency Canary Config",
+  "configVersion": "1",
+  "applications": [
+    "democanary"
+  ],
+  "judge": {
+    "name": "NetflixACAJudge-v1.0",
+    "judgeConfigurations": {}
+  },
+  "metrics": [
+    {
+      "name": "latency",
+      "query": {
+        "type": "prometheus",
+        "metricName": "custom_dummy_latency",
+        "labelBindings": [],
+        "groupByFields": [],
+        "customInlineTemplate": "",
+        "customFilterTemplate": "Filter",
+        "serviceType": "prometheus"
+      },
+      "groups": [
+        "Latency"
+      ],
+      "analysisConfigurations": {
+        "canary": {
+          "direction": "increase"
+        }
+      },
+      "scopeName": "default"
+    }
+  ],
+  "templates": {
+    "Filter": "group=\"${scope}\",namespace=\"${location}\""
+  },
+  "classifier": {
+    "groupWeights": {
+      "Latency": 100
+    }
+  }
+}

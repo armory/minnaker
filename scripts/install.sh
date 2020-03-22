@@ -266,6 +266,15 @@ kubectl -n spinnaker exec -i ${POD_NAME} -- hal $@
 EOF
 
 sudo chmod 755 /usr/local/bin/hal
+
+sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
+#!/bin/bash
+echo "https://$(cat /etc/spinnaker/.hal/public_endpoint)"
+echo "username: 'admin'"
+echo "password: '$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)'"
+EOF
+
+sudo chmod 755 /usr/local/bin/spin_endpoint
 }
 
 ######## Script starts here
