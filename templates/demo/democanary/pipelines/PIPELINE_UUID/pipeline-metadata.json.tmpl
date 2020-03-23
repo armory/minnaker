@@ -304,7 +304,7 @@
       "type": "deployManifest"
     },
     {
-      "name": "Wait",
+      "name": "Gather",
       "refId": "7",
       "requisiteStageRefIds": [
         "4",
@@ -315,6 +315,7 @@
     },
     {
       "name": "Wait",
+      "comments": "This is a dummy stage that could be substituted with other testing stages",
       "refId": "8",
       "requisiteStageRefIds": [
         "7"
@@ -326,6 +327,7 @@
       "completeOtherBranchesThenFail": false,
       "continuePipeline": true,
       "failPipeline": false,
+      "comments": "This is a manual judgment will only occur if the canary fails; otherwise, the app will be promoted automatically",
       "instructions": "Click \"Continue\" to promote and \"Stop\" to not promote.",
       "judgmentInputs": [],
       "name": "Manual Judgment",
@@ -336,7 +338,7 @@
         "13"
       ],
       "stageEnabled": {
-        "expression": "${#stage(\"Canary Analysis\").status == \"NOSUCCEEDED\"}",
+        "expression": "${#stage(\"Canary Analysis\").status != \"SUCCEEDED\"}",
         "type": "expression"
       },
       "type": "manualJudgment"
@@ -453,8 +455,8 @@
     {
       "analysisType": "realTime",
       "canaryConfig": {
-        "beginCanaryAnalysisAfterMins": "2",
-        "canaryAnalysisIntervalMins": "2",
+        "beginCanaryAnalysisAfterMins": "1",
+        "canaryAnalysisIntervalMins": "4",
         "canaryConfigId": "__CANARY_CONFIG_UUID__",
         "lifetimeDuration": "PT0H20M",
         "metricsAccountName": "prometheus",
