@@ -407,6 +407,8 @@ if [[ ${LINUX} -eq 1 ]]; then
   done
 
   sleep 5;
+  create_hal_shortcut
+
   VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal version latest -q")
   kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
   kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply"
@@ -428,7 +430,6 @@ if [[ ${LINUX} -eq 1 ]]; then
 
   kubectl -n spinnaker get pods
 
-  create_hal_shortcut
   echo 'source <(kubectl completion bash)' >>~/.bashrc
 
   set +x
