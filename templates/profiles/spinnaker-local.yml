@@ -1,0 +1,3 @@
+okHttpClient:
+  interceptor:
+    skipHeaderCheck: true

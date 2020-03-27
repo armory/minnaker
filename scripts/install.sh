@@ -137,6 +137,8 @@ print_templates () {
     cat ${PROJECT_DIR}/templates/config-seed-armory.yml >> ${BASE_DIR}/templates/config-seed
   fi
 
+  cp ${PROJECT_DIR}/templates/profiles/spinnaker-local.yml ${BASE_DIR}/templates/profiles/spinnaker-local.yml
+
   cp ${PROJECT_DIR}/templates/profiles/gate-local.yml ${BASE_DIR}/templates/profiles/gate-local.yml
 
   if [[ ${LINUX} -eq 1 ]]; then
