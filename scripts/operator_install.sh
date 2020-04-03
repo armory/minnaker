@@ -250,7 +250,7 @@ if [[ ${LINUX} -eq 1 ]]; then
   SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
   MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
   ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
-  VERSION=2.18.0
+  VERSION=2.18.1
 
 
   sed -i "s|ENDPOINT|${ENDPOINT}|g" \
