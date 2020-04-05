@@ -131,6 +131,10 @@ hydrate_manifest_mariadb () {
   fi
 }
 
+get_latest_version () {
+  curl -sL https://halconfig.s3-us-west-2.amazonaws.com/versions.yml | grep version | awk 'END{print $NF}'
+}
+
 ######## Script starts here
 
 OPEN_SOURCE=0
@@ -250,7 +254,7 @@ if [[ ${LINUX} -eq 1 ]]; then
   SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
   MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
   ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
-  VERSION=2.18.1
+  VERSION=$(get_latest_version)
 
 
   sed -i "s|ENDPOINT|${ENDPOINT}|g" \
