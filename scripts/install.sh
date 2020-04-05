@@ -137,6 +137,8 @@ print_templates () {
     cat ${PROJECT_DIR}/templates/config-seed-armory.yml >> ${BASE_DIR}/templates/config-seed
   fi
 
+  cp ${PROJECT_DIR}/templates/profiles/spinnaker-local.yml ${BASE_DIR}/templates/profiles/spinnaker-local.yml
+
   cp ${PROJECT_DIR}/templates/profiles/gate-local.yml ${BASE_DIR}/templates/profiles/gate-local.yml
 
   if [[ ${LINUX} -eq 1 ]]; then
@@ -266,6 +268,15 @@ kubectl -n spinnaker exec -i ${POD_NAME} -- hal $@
 EOF
 
 sudo chmod 755 /usr/local/bin/hal
+
+sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
+#!/bin/bash
+echo "https://$(cat /etc/spinnaker/.hal/public_endpoint)"
+echo "username: 'admin'"
+echo "password: '$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)'"
+EOF
+
+sudo chmod 755 /usr/local/bin/spin_endpoint
 }
 
 ######## Script starts here
@@ -398,6 +409,8 @@ if [[ ${LINUX} -eq 1 ]]; then
   done
 
   sleep 5;
+  create_hal_shortcut
+
   VERSION=$(kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal version latest -q")
   kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
   kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply"
@@ -405,6 +418,10 @@ if [[ ${LINUX} -eq 1 ]]; then
   # kubectl -n spinnaker exec -i halyard-0 -- sh -c "hal deploy apply --wait-for-completion > /dev/null"
 
   sleep 5;
+
+  echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
+  echo "username: 'admin'"
+  echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
 
   while [[ $(kubectl -n spinnaker get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
   do
@@ -415,7 +432,6 @@ if [[ ${LINUX} -eq 1 ]]; then
 
   kubectl -n spinnaker get pods
 
-  create_hal_shortcut
   echo 'source <(kubectl completion bash)' >>~/.bashrc
 
   set +x

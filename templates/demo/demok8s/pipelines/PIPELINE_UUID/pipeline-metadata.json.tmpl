@@ -1,0 +1,509 @@
+{
+  "application": "demok8s",
+  "name": "Kubernetes Demo",
+  "id": "__PIPELINE_UUID__",
+  "updateTs": "__TIMESTAMP__",
+  "description": "This is a sample pipeline that does the following:\n* Sets up a number of Kubernetes Services and Ingresses (using the default Traefik Ingress controller included with K3s)\n* Deploys a hello world Deployment to the dev namespace (called 'demok8s')\n* Pauses for approval before deploying to test\n* Deploys the hello world Deployment to the test namespace (also called 'demok8s')\n* Runs, in parallel, a webhook and a wait stage (these could be substituted for calls out to other test tools or endpoints)\n* Pauses for approval before deploying to prod\n* Deploys the hello world app as a ReplicaSet to the prod namespace (also called 'demok8s'), using the Spinnaker blue/green (red/black) capability.",
+  "keepWaitingPipelines": false,
+  "lastModifiedBy": "demo",
+  "limitConcurrent": true,
+  "parameterConfig": [
+    {
+      "default": "monday",
+      "description": "",
+      "hasOptions": true,
+      "label": "",
+      "name": "tag",
+      "options": [
+        {
+          "value": "monday"
+        },
+        {
+          "value": "tuesday"
+        },
+        {
+          "value": "wednesday"
+        },
+        {
+          "value": "thursday"
+        },
+        {
+          "value": "friday"
+        },
+        {
+          "value": "saturday"
+        },
+        {
+          "value": "sunday"
+        }
+      ],
+      "pinned": false,
+      "required": true
+    }
+  ],
+  "stages": [
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "comments": "<p>Deploying to the dev environment (access the app at https://MINNAKER_URL/dev/demok8s)</p>\n\n<p>The endpoint is accessed through a Kubernetes Ingress (listening on path /dev/demok8s) and accompany Kubernetes Service, both in the \"dev\" namespace.</p>",
+      "manifests": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "Deployment",
+          "metadata": {
+            "name": "demok8s"
+          },
+          "spec": {
+            "replicas": 3,
+            "selector": {
+              "matchLabels": {
+                "app": "demok8s"
+              }
+            },
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "demok8s",
+                  "lb": "demok8s"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "image": "justinrlee/nginx:${parameters[\"tag\"]}",
+                    "name": "primary",
+                    "ports": [
+                      {
+                        "containerPort": 80
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Dev",
+      "namespaceOverride": "dev",
+      "refId": "1",
+      "requisiteStageRefIds": [],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "failPipeline": true,
+      "instructions": "Please verify Dev (https://MINNAKER_URL/dev/demok8s) and click 'Continue' to continue deploying to Test.",
+      "judgmentInputs": [],
+      "name": "Manual Judgment: Deploy to Test",
+      "notifications": [],
+      "refId": "2",
+      "requisiteStageRefIds": [
+        "1",
+        "8",
+        "9"
+      ],
+      "type": "manualJudgment"
+    },
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "comments": "<p>Deploying to the test environment (access the app at https://MINNAKER_URL/test/demok8s)</p>\n\n<p>The endpoint is accessed through a Kubernetes Ingress (listening on path /test/demok8s) and accompany Kubernetes Service, both in the \"test\" namespace.</p>",
+      "manifests": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "Deployment",
+          "metadata": {
+            "name": "demok8s"
+          },
+          "spec": {
+            "replicas": 3,
+            "selector": {
+              "matchLabels": {
+                "app": "demok8s"
+              }
+            },
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "demok8s",
+                  "lb": "demok8s"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "image": "justinrlee/nginx:${parameters[\"tag\"]}",
+                    "name": "primary",
+                    "ports": [
+                      {
+                        "containerPort": 80
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Test",
+      "namespaceOverride": "test",
+      "refId": "3",
+      "requisiteStageRefIds": [
+        "2"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "name": "Wait",
+      "refId": "4",
+      "requisiteStageRefIds": [
+        "3"
+      ],
+      "type": "wait",
+      "waitTime": 30
+    },
+    {
+      "failPipeline": true,
+      "instructions": "Please verify Test (https://MINNAKER_URL/test/demok8s) and click 'Continue' to continue deploying to Prod",
+      "judgmentInputs": [],
+      "name": "Manual Judgment: Deploy to Prod",
+      "notifications": [],
+      "refId": "5",
+      "requisiteStageRefIds": [
+        "4",
+        "7"
+      ],
+      "type": "manualJudgment"
+    },
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "comments": "<p>Deploying to the prod environment (access the app at https://MINNAKER_URL/prod/demok8s)</p>\n\n<p>The endpoint is accessed through a Kubernetes Ingress (listening on path /prod/demok8s) and accompany Kubernetes Service, both in the \"prod\" namespace.</p>",
+      "manifests": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "demok8s"
+          },
+          "spec": {
+            "replicas": 3,
+            "selector": {
+              "matchLabels": {
+                "app": "demok8s"
+              }
+            },
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "demok8s"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "image": "justinrlee/nginx:${parameters[\"tag\"]}",
+                    "name": "primary",
+                    "ports": [
+                      {
+                        "containerPort": 80,
+                        "protocol": "TCP"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Prod (Blue/Green)",
+      "namespaceOverride": "prod",
+      "refId": "6",
+      "requisiteStageRefIds": [
+        "5"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": true,
+        "options": {
+          "enableTraffic": true,
+          "namespace": "prod",
+          "services": [
+            "service demok8s"
+          ],
+          "strategy": "redblack"
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "method": "GET",
+      "name": "Webhook",
+      "refId": "7",
+      "requisiteStageRefIds": [
+        "3"
+      ],
+      "statusUrlResolution": "getMethod",
+      "type": "webhook",
+      "url": "https://www.google.com/"
+    },
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "v1",
+          "kind": "Service",
+          "metadata": {
+            "name": "demok8s",
+            "namespace": "dev"
+          },
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "port": 80,
+                "protocol": "TCP",
+                "targetPort": 80
+              }
+            ],
+            "selector": {
+              "lb": "demok8s"
+            }
+          }
+        },
+        {
+          "apiVersion": "extensions/v1beta1",
+          "kind": "Ingress",
+          "metadata": {
+            "annotations": {
+              "nginx.ingress.kubernetes.io/rewrite-target": "/",
+              "traefik.ingress.kubernetes.io/rule-type": "PathPrefixStrip"
+            },
+            "labels": {
+              "app": "demok8s"
+            },
+            "name": "demok8s",
+            "namespace": "dev"
+          },
+          "spec": {
+            "rules": [
+              {
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "serviceName": "demok8s",
+                        "servicePort": "http"
+                      },
+                      "path": "/dev/demok8s"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Dev Service and Ingress",
+      "namespaceOverride": "",
+      "refId": "8",
+      "requisiteStageRefIds": [],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "v1",
+          "kind": "Service",
+          "metadata": {
+            "name": "demok8s",
+            "namespace": "test"
+          },
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "port": 80,
+                "protocol": "TCP",
+                "targetPort": 80
+              }
+            ],
+            "selector": {
+              "lb": "demok8s"
+            }
+          }
+        },
+        {
+          "apiVersion": "extensions/v1beta1",
+          "kind": "Ingress",
+          "metadata": {
+            "annotations": {
+              "nginx.ingress.kubernetes.io/rewrite-target": "/",
+              "traefik.ingress.kubernetes.io/rule-type": "PathPrefixStrip"
+            },
+            "labels": {
+              "app": "demok8s"
+            },
+            "name": "demok8s",
+            "namespace": "test"
+          },
+          "spec": {
+            "rules": [
+              {
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "serviceName": "demok8s",
+                        "servicePort": "http"
+                      },
+                      "path": "/test/demok8s"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Test Service and Ingress",
+      "refId": "9",
+      "requisiteStageRefIds": [],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "spinnaker",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "v1",
+          "kind": "Service",
+          "metadata": {
+            "name": "demok8s",
+            "namespace": "prod"
+          },
+          "spec": {
+            "ports": [
+              {
+                "name": "http",
+                "port": 80,
+                "protocol": "TCP",
+                "targetPort": 80
+              }
+            ],
+            "selector": {
+              "lb": "demok8s"
+            }
+          }
+        },
+        {
+          "apiVersion": "extensions/v1beta1",
+          "kind": "Ingress",
+          "metadata": {
+            "annotations": {
+              "nginx.ingress.kubernetes.io/rewrite-target": "/",
+              "traefik.ingress.kubernetes.io/rule-type": "PathPrefixStrip"
+            },
+            "labels": {
+              "app": "demok8s"
+            },
+            "name": "demok8s",
+            "namespace": "prod"
+          },
+          "spec": {
+            "rules": [
+              {
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "serviceName": "demok8s",
+                        "servicePort": "http"
+                      },
+                      "path": "/prod/demok8s"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "moniker": {
+        "app": "demok8s"
+      },
+      "name": "Deploy Prod Service and Ingress",
+      "namespaceOverride": "",
+      "refId": "10",
+      "requisiteStageRefIds": [],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    }
+  ],
+  "triggers": []
+}
