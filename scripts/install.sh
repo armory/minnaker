@@ -221,7 +221,7 @@ hydrate_and_seed_halconfig () {
       -e "s|MYSQL_PASSWORD|${MYSQL_PASSWORD}|g" \
       -e "s|MINIO_PASSWORD|${MINIO_PASSWORD}|g" \
       -e "s|PUBLIC_ENDPOINT|${PUBLIC_ENDPOINT}|g" \
-      -e "s|uuid.*|uuid: cafed00d$(uuidgen | cut -c 9-)|g" \
+      -e "s|uuid.*|uuid: ${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|g" \
     ${BASE_DIR}/templates/config-seed \
     | tee ${BASE_DIR}/templates/config
 
@@ -264,7 +264,7 @@ sudo tee /usr/local/bin/hal <<-'EOF'
 POD_NAME=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
 # echo $POD_NAME
 set -x
-kubectl -n spinnaker exec -i ${POD_NAME} -- sh -c "hal $@"
+kubectl -n spinnaker exec -i ${POD_NAME} -- sh -c "hal $*"
 EOF
 
 sudo chmod 755 /usr/local/bin/hal
@@ -284,6 +284,7 @@ sudo chmod 755 /usr/local/bin/spin_endpoint
 OPEN_SOURCE=0
 PUBLIC_ENDPOINT=""
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
+MAGIC_NUMBER=cafed00d
 
 case "$(uname -s)" in
   Darwin*)
@@ -305,6 +306,10 @@ while [ "$#" -gt 0 ]; do
     -o|--oss)
       printf "Using OSS Spinnaker"
       OPEN_SOURCE=1
+      ;;
+    -x)
+      printf "Excluding from Minnaker metrics"
+      MAGIC_NUMBER=cafedead
       ;;
     -P|--public-endpoint)
       if [ -n $2 ]; then
