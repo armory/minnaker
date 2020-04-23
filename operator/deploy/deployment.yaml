@@ -16,10 +16,10 @@ spec:
       serviceAccountName: spinnaker-operator
       containers:
         - name: spinnaker-operator
-          image: armory/armory-operator:0.3.1
+          image: armory/armory-operator:0.4.0
           command:
             - spinnaker-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
               valueFrom:
@@ -28,8 +28,8 @@ spec:
             - name: OPERATOR_NAME
               value: "spinnaker-operator"
         - name: halyard
-          image: armory/halyard-armory:operator-0.3.x
-          imagePullPolicy: Always
+          image: armory/halyard-armory:operator-0.4.x
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8064
               protocol: TCP

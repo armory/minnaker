@@ -53,9 +53,20 @@ rules:
   - create
 - apiGroups:
   - spinnaker.armory.io
-  - spinnaker.io
   resources:
   - '*'
+  - spinnakerservices
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+  - patch
+- apiGroups:
+  - spinnaker.io
+  resources:
+  - spinnakeraccounts
   verbs:
   - create
   - get
