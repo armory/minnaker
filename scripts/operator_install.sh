@@ -222,9 +222,9 @@ else
   exit 1
 fi
 
+# generate_spinnaker_password
 generate_passwords
-print_templates
-print_manifests
+copy_templates
 
 hydrate_manifest_minio
 hydrate_manifest_mariadb

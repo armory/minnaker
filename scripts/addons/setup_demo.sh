@@ -16,13 +16,13 @@ function generate_or_use_uuid () {
 }
 
 BASE_DIR=/etc/spinnaker
-PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
+PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" >/dev/null 2>&1 && pwd )
 
 PVC="minio-pvc"
 FRONT50_BUCKET="spinnaker"
 APPLICATION_NAME="demok8s"
 
-cp -rv ${PROJECT_DIR}/templates/demo ${BASE_DIR}/templates
+cp -rv ${PROJECT_DIR}/templates/addons/demo ${BASE_DIR}/templates/
 
 UUID_PATH=${BASE_DIR}/.hal/.secret/demo_k8s_pipeline_uuid
 

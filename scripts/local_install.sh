@@ -94,7 +94,7 @@ sudo chown -R 1000 ${BASE_DIR}
 detect_endpoint
 generate_passwords
 copy_templates
-update_templates_for_linux
+# update_templates_for_linux
 hydrate_templates
 conditional_copy
 

@@ -65,10 +65,10 @@ kubectl apply -n default -f ${BASE_DIR}/prometheus/custom/prometheus.yaml
 # Set up ingress with auth (same username/password as Spinnaker)
 # Set up service for Kayenta to get to Prometheus
 
-sudo apt-get update
-sudo apt-get install apache2-utils -y
-htpasswd -b -c auth admin $(cat /etc/spinnaker/.hal/.secret/spinnaker_password)
-kubectl -n default create secret generic prometheus-auth --from-file auth
+# sudo apt-get update
+# sudo apt-get install apache2-utils -y
+# htpasswd -b -c auth admin $(cat /etc/spinnaker/.hal/.secret/spinnaker_password)
+# kubectl -n default create secret generic prometheus-auth --from-file auth
 
 kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-service.yaml
-kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress.yaml
+kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress-local.yaml

@@ -4,7 +4,7 @@ set -e
 
 # The filename is intentionally prometheus_install and not install_prometheus so install.sh continues to autocomplete
 
-BASE_DIR=/etc/spinnaker
+BASE_DIR=~/minnaker
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" >/dev/null 2>&1 && pwd )
 
 curl -L https://github.com/coreos/prometheus-operator/archive/v0.37.0.tar.gz -o /tmp/prometheus-operator.tgz
@@ -44,14 +44,14 @@ mkdir -p ${BASE_DIR}/prometheus/custom
 
 cp ${BASE_DIR}/prometheus/example/rbac/prometheus/prometheus.yaml ${BASE_DIR}/prometheus/custom/
 
-tee /etc/spinnaker/prometheus/custom/patch.yml <<-'EOF'
+tee ${BASE_DIR}/prometheus/custom/patch.yml <<-'EOF'
 spec:
   routePrefix: /prometheus
   externalUrl: https://PUBLIC_ENDPOINT/prometheus
 EOF
 
-sed -i "s|PUBLIC_ENDPOINT|$(cat /etc/spinnaker/.hal/public_endpoint)|g" /etc/spinnaker/prometheus/custom/patch.yml
-yq m -i ${BASE_DIR}/prometheus/custom/prometheus.yaml /etc/spinnaker/prometheus/custom/patch.yml
+sed -i.bak "s|PUBLIC_ENDPOINT|$(cat ${BASE_DIR}/.hal/public_endpoint)|g" ${BASE_DIR}/prometheus/custom/patch.yml
+yq m -i ${BASE_DIR}/prometheus/custom/prometheus.yaml ${BASE_DIR}/prometheus/custom/patch.yml
 
 yq d -i ${BASE_DIR}/prometheus/custom/prometheus.yaml spec.serviceMonitorSelector
 
@@ -65,10 +65,5 @@ kubectl apply -n default -f ${BASE_DIR}/prometheus/custom/prometheus.yaml
 # Set up ingress with auth (same username/password as Spinnaker)
 # Set up service for Kayenta to get to Prometheus
 
-sudo apt-get update
-sudo apt-get install apache2-utils -y
-htpasswd -b -c auth admin $(cat /etc/spinnaker/.hal/.secret/spinnaker_password)
-kubectl -n default create secret generic prometheus-auth --from-file auth
-
 kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-service.yaml
-kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress.yaml
+kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress-local.yaml

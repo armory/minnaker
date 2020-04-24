@@ -1,37 +1,9 @@
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: hal-pvc
-  labels:
-    app: halyard
-  namespace: spinnaker
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: kube-pvc
-  labels:
-    app: halyard
-  namespace: spinnaker
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Mi
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: halyard
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   replicas: 1
   serviceName: halyard
@@ -68,11 +40,12 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 65535
-        # fsGroup: 65535
       volumes:
       - name: hal
-        persistentVolumeClaim:
-          claimName: hal-pvc
+        hostPath:
+          path: BASE_DIR/.hal
+          type: DirectoryOrCreate
       - name: kube
-        persistentVolumeClaim:
-          claimName: kube-pvc
+        hostPath:
+          path: BASE_DIR/.kube
+          type: DirectoryOrCreate

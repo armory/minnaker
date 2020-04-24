@@ -1,10 +1,23 @@
-# Do not use this, permissions are not currently set up correctly
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mariadb-pvc
+  labels:
+    app: mariadb
+  namespace: NAMESPACE
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mariadb
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   replicas: 1
   serviceName: mariadb
@@ -23,24 +36,25 @@ spec:
         - name: mysql
           mountPath: "/var/lib/mysql"
         env:
-        # - name: HOME
-        #   value: "/home/spinnaker"
         - name: MYSQL_ROOT_PASSWORD
-          value: "MYSQL_PASSWORD"
+          value: "MARIADB_PASSWORD"
         ports:
         - containerPort: 3306
           protocol: TCP
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 65535
+        fsGroup: 65535
       volumes:
       - name: mysql
-        hostPath:
-          path: BASE_DIR/mysql
-          type: DirectoryOrCreate
+        persistentVolumeClaim:
+          claimName: mariadb-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mariadb
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   ports:
     - port: 3306

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: spin
   name: spin-ingress
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   rules:
   - 
