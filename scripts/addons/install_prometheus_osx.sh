@@ -66,4 +66,4 @@ kubectl apply -n default -f ${BASE_DIR}/prometheus/custom/prometheus.yaml
 # Set up service for Kayenta to get to Prometheus
 
 kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-service.yaml
-kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress-local.yaml
+kubectl -n default apply -f ${BASE_DIR}/templates/prometheus/prometheus-ingress-noauth.yaml

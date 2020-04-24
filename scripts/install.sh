@@ -94,7 +94,7 @@ sudo chown -R 1000 ${BASE_DIR}
 detect_endpoint
 generate_passwords
 copy_templates
-update_templates_for_linux
+update_templates_for_auth
 hydrate_templates
 conditional_copy
 
@@ -121,14 +121,13 @@ done
 
 sleep 5;
 create_hal_shortcut
+create_spin_endpoint
 
 VERSION=$(kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal version latest -q")
 kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
 kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal deploy apply"
 
-echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
-echo "username: 'admin'"
-echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
+spin_endpoint
 
 while [[ $(kubectl -n ${NAMESPACE} get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
 do
@@ -143,6 +142,4 @@ echo 'source <(kubectl completion bash)' >>~/.bashrc
 
 set +x
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
-echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
-echo "username: 'admin'"
-echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
+spin_endpoint

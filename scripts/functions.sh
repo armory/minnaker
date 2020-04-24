@@ -62,15 +62,20 @@ copy_templates () {
   fi
 }
 
-update_templates_for_linux () {
-  for f in $(ls -1 ${PROJECT_DIR}/templates/profiles-linux/); do
-    cat ${PROJECT_DIR}/templates/profiles-linux/${f} | tee -a ${BASE_DIR}/templates/profiles/${f}
+update_templates_for_auth () {
+  for f in $(ls -1 ${PROJECT_DIR}/templates/profiles-auth/); do
+    cat ${PROJECT_DIR}/templates/profiles-auth/${f} | tee -a ${BASE_DIR}/templates/profiles/${f}
   done
 }
 
 hydrate_templates () {
   PUBLIC_ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
-  SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+  # If no generate_passwords was run, use "password" (there should also be no placeholders so no actual substitution)
+  if [[ -f ${BASE_DIR}/.hal/.secret/spinnaker_password ]]; then
+    SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+  else
+    SPINNAKER_PASSWORD="password"
+  fi
   
   # Todo: Decide whether to use these
   # MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
@@ -91,7 +96,7 @@ hydrate_templates () {
   done
 }
 
-# The ONLY difference is i.bak, cause OSX sed is stupid
+# The primary difference is i.bak, cause OSX sed is stupid
 hydrate_templates_osx () {
   PUBLIC_ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
 

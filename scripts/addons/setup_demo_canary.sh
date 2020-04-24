@@ -24,7 +24,7 @@ APPLICATION_NAME="democanary"
 
 KAYENTA_BUCKET="kayenta"
 
-cp -rv ${PROJECT_DIR}/templates/addons/demo ${BASE_DIR}/templates
+cp -rv ${PROJECT_DIR}/templates/addons/demo ${BASE_DIR}/templates/
 
 if [[ ! -f ${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid ]]; then
   echo "Generating Canary Config UUID (${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid)"

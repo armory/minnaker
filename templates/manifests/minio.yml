@@ -16,7 +16,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: 
+  name: minio
   namespace: NAMESPACE
 spec:
   replicas: 1
