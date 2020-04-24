@@ -2,9 +2,6 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: prom-ingress
-  annotations:
-    traefik.ingress.kubernetes.io/auth-type: basic
-    traefik.ingress.kubernetes.io/auth-secret: prometheus-auth
 spec:
   rules:
   - http:

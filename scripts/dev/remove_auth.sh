@@ -2,6 +2,8 @@
 set -x
 set -e
 
+# Linux only
+
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" >/dev/null 2>&1 && pwd )
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
