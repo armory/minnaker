@@ -15,7 +15,7 @@ function generate_or_use_uuid () {
 }
 
 BASE_DIR=/etc/spinnaker
-PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
+PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" >/dev/null 2>&1 && pwd )
 
 PVC="minio-pvc"
 # We are using the bucket kayenta instead of the spinnaker bucket, because Kayenta crashes if it's using the same bucket (haven't dug into this yet)
@@ -24,7 +24,7 @@ APPLICATION_NAME="democanary"
 
 KAYENTA_BUCKET="kayenta"
 
-cp -rv ${PROJECT_DIR}/templates/demo ${BASE_DIR}/templates
+cp -rv ${PROJECT_DIR}/templates/addons/demo ${BASE_DIR}/templates/
 
 if [[ ! -f ${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid ]]; then
   echo "Generating Canary Config UUID (${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid)"

@@ -1,0 +1,12 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: prom-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: prometheus-operated
+          servicePort: 9090
+        path: /prometheus

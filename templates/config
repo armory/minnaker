@@ -1,7 +1,7 @@
 currentDeployment: default
 deploymentConfigurations:
 - name: default
-  version: 2.17.1
+  version: 2.19.8
   providers:
     kubernetes:
       enabled: true
@@ -15,7 +15,7 @@ deploymentConfigurations:
     size: SMALL
     type: Distributed
     accountName: spinnaker
-    location: spinnaker
+    location: NAMESPACE
   persistentStorage:
     persistentStoreType: s3
     s3:

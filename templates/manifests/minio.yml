@@ -5,7 +5,7 @@ metadata:
   name: minio-pvc
   labels:
     app: minio
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   accessModes:
   - ReadWriteOnce
@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: minio
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   replicas: 1
   serviceName: minio
@@ -59,7 +59,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: minio
-  namespace: spinnaker
+  namespace: NAMESPACE
 spec:
   ports:
     - port: 9000

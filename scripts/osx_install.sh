@@ -2,14 +2,13 @@
 set -x
 set -e
 
-# Install Minnaker in Ubuntu VM (will first install k3s)
+# Install Minnaker in docker-desktop Kubernetes
 
 ##### Functions
 print_help () {
   set +x
   echo "Usage: install.sh"
   echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
-  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
@@ -22,15 +21,15 @@ OPEN_SOURCE=0
 PUBLIC_ENDPOINT=""
 MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
-KUBERNETES_CONTEXT=default
+KUBERNETES_CONTEXT=docker-desktop
 NAMESPACE=spinnaker
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  echo "Use osx_install.sh to install on OSX Docker Desktop"
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "Use install.sh to install on Linux"
   exit 1
 fi
 
-BASE_DIR=/etc/spinnaker
+BASE_DIR=~/minnaker
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -41,15 +40,6 @@ while [ "$#" -gt 0 ]; do
     -x)
       printf "Excluding from Minnaker metrics"
       MAGIC_NUMBER=${DEAD_MAGIC_NUMBER}
-      ;;
-    -P|--public-endpoint)
-      if [ -n $2 ]; then
-        PUBLIC_ENDPOINT=$2
-        shift
-      else
-        printf "Error: --public-endpoint requires an IP address >&2"
-        exit 1
-      fi
       ;;
     -B|--base-dir)
       if [ -n $2 ]; then
@@ -79,39 +69,44 @@ fi
 
 echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 
-echo "Running minnaker setup for Linux"
-  
+echo "Running minnaker setup for OSX"
+
 # Scaffold out directories
-# OSS Halyard uses 1000; we're using 1000 for everything
-sudo mkdir -p ${BASE_DIR}/templates/{manifests,profiles,service-settings}
-sudo mkdir -p ${BASE_DIR}/manifests
-sudo mkdir -p ${BASE_DIR}/.kube
-sudo mkdir -p ${BASE_DIR}/.hal/.secret
-sudo mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
+# OSX / Docker Desktop has some fancy permissions so we do everything as ourselves
+mkdir -p ${BASE_DIR}/templates/{manifests,profiles,service-settings}
+mkdir -p ${BASE_DIR}/manifests
+mkdir -p ${BASE_DIR}/.kube
+mkdir -p ${BASE_DIR}/.hal/.secret
+mkdir -p ${BASE_DIR}/.hal/default/{profiles,service-settings}
 
-sudo chown -R 1000 ${BASE_DIR}
+echo "localhost" > ${BASE_DIR}/.hal/public_endpoint
 
-detect_endpoint
-generate_passwords
+# detect_endpoint
+# generate_passwords
 copy_templates
-update_templates_for_auth
-hydrate_templates
+# update_templates_for_linux
+hydrate_templates_osx
 conditional_copy
 
-### Set up Kubernetes environment
-install_k3s
-sudo env "PATH=$PATH" kubectl config set-context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE}
-install_yq
+### Set up / check Kubernetes environment
+curl -L https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud/deploy.yaml -o ${BASE_DIR}/manifests/nginx-ingress-controller.yaml
+
+kubectl --context ${KUBERNETES_CONTEXT} get ns
+if [[ $? -ne 0 ]]; then
+  echo "Docker desktop not detected; bailing."
+  exit 1
+fi
 
 ### Create all manifests:
 # - namespace - must be created first
+# - NGINX ingress controller - must be created second
 # - halyard
 # - minio
 # - clusteradmin
 # - ingress
 kubectl --context ${KUBERNETES_CONTEXT} apply -f ${BASE_DIR}/manifests/namespace.yml
 kubectl --context ${KUBERNETES_CONTEXT} apply -f ${BASE_DIR}/manifests
-  
+
 ######## Bootstrap
 while [[ $(kubectl --context ${KUBERNETES_CONTEXT} get statefulset -n ${NAMESPACE} halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
 do
@@ -120,14 +115,12 @@ do
 done
 
 sleep 5;
-create_hal_shortcut
-create_spin_endpoint
 
 VERSION=$(kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal version latest -q")
 kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal config version edit --version ${VERSION}"
 kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal deploy apply"
 
-spin_endpoint
+echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
 
 while [[ $(kubectl -n ${NAMESPACE} get pods --field-selector status.phase!=Running 2> /dev/null | wc -l) -ne 0 ]];
 do
@@ -137,9 +130,6 @@ do
 done
 
 kubectl -n ${NAMESPACE} get pods
-
-echo 'source <(kubectl completion bash)' >>~/.bashrc
-
 set +x
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
-spin_endpoint
+echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
