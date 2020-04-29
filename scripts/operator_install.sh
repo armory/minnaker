@@ -34,7 +34,6 @@ install_k3s () {
   curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
-
 install_yq () {
   sudo curl -sfL https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o /usr/local/bin/yq
   sudo chmod +x /usr/local/bin/yq
@@ -147,6 +146,7 @@ get_latest_version () {
 OPEN_SOURCE=0
 PUBLIC_ENDPOINT=""
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
+NAMESPACE=spinnaker
 
 case "$(uname -s)" in
   Darwin*)
@@ -194,15 +194,15 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if [[ ${OPEN_SOURCE} -eq 1 ]]; then
-  printf "Using OSS Spinnaker"
-  HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
-else
-  printf "Using Armory Spinnaker"
-  HALYARD_IMAGE="armory/halyard-armory:1.9.0"
-fi
+# if [[ ${OPEN_SOURCE} -eq 1 ]]; then
+#   printf "Using OSS Spinnaker"
+#   HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
+# else
+#   printf "Using Armory Spinnaker"
+#   HALYARD_IMAGE="armory/halyard-armory:1.9.0"
+# fi
 
-echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
+# echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
 
 # Scaffold out directories
 if [[ ${LINUX} -eq 1 ]]; then
