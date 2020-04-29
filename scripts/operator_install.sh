@@ -88,13 +88,12 @@ generate_passwords () {
   fi
 }
 
-print_templates () {
-  cp ${PROJECT_DIR}/templates/mariadb-with-pvc.yml ${BASE_DIR}/templates/mariadb.yml
-  cp ${PROJECT_DIR}/templates/minio-with-pvc.yml ${BASE_DIR}/templates/minio.yml
-
+copy_templates () {
+  cp ${PROJECT_DIR}/templates/manifests/mariadb.yml ${BASE_DIR}/templates/mariadb.yml
+  cp ${PROJECT_DIR}/templates/manifests/minio.yml ${BASE_DIR}/templates/minio.yml
 }
 
-print_manifests () {
+copy_manifests () {
   ###
   # namespace.yml
   # spinnaker-ingress.yml
@@ -124,11 +123,19 @@ hydrate_manifest_mariadb () {
   # We actually don't need the sed entry for BASE_DIR anymore, but leaving for later
   if [[ ! -e ${BASE_DIR}/manifests/mariadb.yml ]]; then
     sed \
-      -e "s|MYSQL_PASSWORD|${MYSQL_PASSWORD}|g" \
+      -e "s|MYSQL_ROOT_PASSWORD|${MYSQL_PASSWORD}|g" \
       -e "s|BASE_DIR|${BASE_DIR}|g" \
     ${BASE_DIR}/templates/mariadb.yml \
     | tee ${BASE_DIR}/manifests/mariadb.yml
   fi
+}
+
+hydrate_manifests () {
+  for f in ${BASE_DIR}/manifests/*; do
+    sed -i \
+      -e "s|NAMESPACE|${NAMESPACE}|g" \
+      ${f}
+  done
 }
 
 get_latest_version () {
@@ -192,7 +199,7 @@ if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   printf "Using Armory Spinnaker"
-  HALYARD_IMAGE="armory/halyard-armory:1.8.3"
+  HALYARD_IMAGE="armory/halyard-armory:1.9.0"
 fi
 
 echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
@@ -225,9 +232,11 @@ fi
 # generate_spinnaker_password
 generate_passwords
 copy_templates
+copy_manifests
 
 hydrate_manifest_minio
 hydrate_manifest_mariadb
+hydrate_manifests
 
 if [[ ${LINUX} -eq 1 ]]; then
   ### Create all manifests:
