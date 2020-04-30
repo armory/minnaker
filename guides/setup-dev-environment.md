@@ -170,3 +170,180 @@ Follow the "debugging" section here: https://github.com/spinnaker-plugin-example
 notes:
 * Create the `plugins` directory in the git repo (e.g., `~/git/spinnaker/orca/plugins`) and put the `.plugin-ref` in there
 * If you don't see the gradle tab, you can get to it with View > Tool Windows > Gradle
+
+## Build and test the randomWait stage
+
+This assumes you have a Github account, and are logged in.
+
+1. You *probably* want to work on a fork.  Go to github.com/spinnaker-plugin-examples/pf4jStagePlugin
+
+1. In the top right corner, click "Fork" and choose your username to create a fork.  For example, mine is `justinrlee` so I end up with github.com/justinrlee/pf4jStagePlugin
+
+1. On your workstation, choose a working directory.  For example, `~/git/justinrlee`
+
+    ```bash
+    mkdir -p ~/git/justinrlee
+    cd ~/git/justinrlee
+    ```
+
+1. Clone the repo
+
+    ```bash
+    git clone https://github.com/justinrlee/pf4jStagePlugin.git
+    ```
+
+    _or, if you have a Git SSH key set up_
+
+    ```bash
+    git clone git@github.com:justinrlee/pf4jStagePlugin.git
+    ```
+
+1. Check out a tag.
+
+    If you are using Spinnaker 1.19.x, you probably need a 1.0.x tag (1.0.x is compatible 1.19, 1.1.x is compatible with 1.20)
+    
+    List available tags:
+    
+    ```bash
+    cd pf4jStagePlugin
+    git tag -l
+    ```
+
+    Check out the tag you want:
+
+    ```bash
+    git checkout v1.0.17
+    ```
+
+    Create a branch off of it (optional, but good if you're gonna be making changes).  This creates a branch called custom-stage
+
+    ```bash
+    git switch -c custom-stage
+    ```
+
+1. Build the thing from the CLI
+
+    ```bash
+    ./gradlew releaseBundle
+    ```
+
+    This will generate an orca .plugin-ref file (`random-wait-orca/build/orca.plugin-ref`).  
+
+1. Copy the `orca.plugin-ref` file to the `plugins` directory in your `orca` repo.
+
+    Create the destination directory - this will depend on where you cloned the orca repo
+
+    ```bash
+    mkdir -p ~/git/spinnaker/orca/plugins
+    ```
+
+    Copy the file
+
+    ```bash
+    cp random-wait-orca/build/orca.plugin-ref ~/git/spinnaker/orca/plugins/
+    ```
+
+1. Create the orca-local.yml file in `~/.spinnaker/`
+
+    This tells Spinnaker to enable and use the plugin
+
+    Create this file at `~/.spinnaker/orca-local.yml`:
+    
+    ```bash
+    # ~/.spinnaker/orca-local.yml
+    spinnaker:
+      extensibility:
+        plugins:
+          Armory.RandomWaitPlugin:
+            enabled: true
+            version: 1.0.17
+            extensions:
+              armory.randomWaitStage:
+                enabled: true
+                config:
+                  defaultMaxWaitTime: 60
+    ```
+
+1. In IntelliJ (where you have the Orca project open), Link the plugin project to your current project
+
+    1. Open the Gradle window if it's not already open (View > Tool Windows > Gradle)
+
+    1. In the Gradle window, click the little '+' sign
+
+    1. Navigate to your plugin directory (e.g., `/git/justinrlee/pf4jStagePlugin`), and select `build.gradle` and click Open
+
+1. In the Gradle window, right click "orca" and click "Reimport Gralde Project"
+
+1. In IntelliJ, create a new build configuration
+
+    1. In the top right, next to the little hammer icon, there's a dropdown.  Click "Edit Configurations..."
+
+    1. Click the '+' sign in the top left, and select "Application"
+
+    1. Call it something cool.  Like "Build and Test Plugin"
+
+    1. Select the main class (Either wait for it to load and select "Main (com.netflix.spinnaker.orca) or click on "Project" and navigate to `orca > orca-web > src > main > groovy > com.netflix.spinnaker > orca > Main`)
+
+    1. In the dropdown for "Use classpath of module", select "orca-web_main"
+
+    1. Put this in the "VM Options" field put this: '`-Dpf4j.mode=development`'
+
+    1. In the "Before launch" section of the window, click the '+' sign and add "Build Project"
+
+    1. Select "Build" in the "Before launch" section and click the '-' sign to remove it (you don't need both "Build" and "Build Project")
+
+    1. Click "Apply" and then "OK"
+
+1. Run your stuff.
+
+    1. If the unmodified Orca is still running, click the little stop icon (red square in top right corner)
+
+    1. Select your new build configuration in the dropdown
+
+    1. Click the runicon (little green triangle)
+
+    1. In the console output you should see something that looks like this:
+
+        ```
+        2020-04-30 10:17:41.242  INFO 53937 --- [           main] com.netflix.spinnaker.orca.Main          : [] Starting Main on justin-mbp-16.lan with PID 53937 (/Users/justin/dev/spinnaker/orca/orca-web/build/classes/groovy/main started by justin in /Users/justin/dev/spinnaker/orca)
+        2020-04-30 10:17:41.245  INFO 53937 --- [           main] com.netflix.spinnaker.orca.Main          : [] The following profiles are active: test,local
+        
+        ...
+        
+        2020-04-30 10:17:44.276  WARN 53937 --- [           main] c.n.s.config.PluginsAutoConfiguration    : [] No remote repositories defined, will fallback to looking for a 'repositories.json' file next to the application executable
+        2020-04-30 10:17:44.410  INFO 53937 --- [           main] org.pf4j.AbstractPluginManager           : [] Plugin 'Armory.RandomWaitPlugin@unspecified' resolved
+        2020-04-30 10:17:44.411  INFO 53937 --- [           main] org.pf4j.AbstractPluginManager           : [] Start plugin 'Armory.RandomWaitPlugin@unspecified'
+        2020-04-30 10:17:44.413  INFO 53937 --- [           main] i.a.p.s.wait.random.RandomWaitPlugin     : [] RandomWaitPlugin.start()
+        ```
+
+    1. If you see "no class Main.main" or something, in the Gradle window, try right click on "orca" and reimport Gradle project.
+
+1. Test your stuff
+
+    1. Go into the Spinnaker UI (should be http://your-VM-ip:9000)
+
+    1. Go to applications > spin > pipelines
+
+    1. Create a new pipeline
+
+    1. Add stage
+
+    1. Edit stage as JSON (bottom right)
+
+    1. Paste this in there:
+
+        ```json
+        {
+          "maxWaitTime": 15,
+          "name": "Test RandomWait",
+          "type": "randomWait"
+        }
+        ```
+
+    1. Update stage
+
+    1. Save changes
+
+    1. Click back to pipelines (pipelines tab at top)
+
+Magic.  Maybe.  Maybe not.
