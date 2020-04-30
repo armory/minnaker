@@ -43,8 +43,22 @@ for svc in $(cat ${BASE_DIR}/.hal/external_services); do
   yq d -i ${BASE_DIR}/.hal/spinnaker-local.yml services.${svc}.baseUrl
 done
 
+echo "Updating Minnaker endpoint..."
+yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity.overrideBaseUrl http://${MINNAKER_IP}:8084
+yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.uiSecurity.overrideBaseUrl http://${MINNAKER_IP}:9000
+
+echo "--------------"
+echo "Deck:"
+yq r ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.uiSecurity
+echo "--------------"
+echo "Gate:"
+yq r ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity
+echo "--------------"
+
 echo "Generated deploymentConfigurations[0].deploymentEnvironment.customSizing:"
+echo "--------------"
 yq r ${BASE_DIR}/.hal/config deploymentConfigurations[0].deploymentEnvironment.customSizing
+echo "--------------"
 
 echo "Generated local ${BASE_DIR}/.hal/default/profiles/spinnaker-local.yml:"
 echo "--------------"

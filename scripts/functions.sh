@@ -157,9 +157,9 @@ sudo chmod 755 /usr/local/bin/hal
 create_spin_endpoint () {
 sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash
-echo "https://$(cat /etc/spinnaker/.hal/public_endpoint)"
-echo "username: 'admin'"
-echo "password: '$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)'"
+yq r /etc/spinnaker/.hal/config deploymentConfigurations[0].security.uiSecurity.overrideBaseUrl
+[[ -f /etc/spinnaker/.hal/.secret/spinnaker_password ]] && echo "username: 'admin'"
+[[ -f /etc/spinnaker/.hal/.secret/spinnaker_password ]] && echo "password: '$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)'"
 EOF
 
 sudo chmod 755 /usr/local/bin/spin_endpoint
