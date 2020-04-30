@@ -44,8 +44,11 @@ for svc in $(cat ${BASE_DIR}/.hal/external_services); do
 done
 
 echo "Updating Minnaker endpoint..."
-yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity.overrideBaseUrl http://${MINNAKER_IP}:8084
 yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.uiSecurity.overrideBaseUrl http://${MINNAKER_IP}:9000
+yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity.overrideBaseUrl http://${MINNAKER_IP}:8084
+yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity.corsAccessPattern "http://.*"
+yq w -i ${BASE_DIR}/.hal/default/profiles/gate-local.yml server.servlet.context-path "/"
+yq w -i ${BASE_DIR}/.hal/default/service-settings/gate.yml healthEndpoint "/health"
 
 echo "--------------"
 echo "Deck:"
