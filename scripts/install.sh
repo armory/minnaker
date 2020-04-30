@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+# set -x
 set -e
 
 # Install Minnaker in Ubuntu VM (will first install k3s)
