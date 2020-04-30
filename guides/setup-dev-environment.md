@@ -147,6 +147,12 @@ This example uses Orca, but you can run any number of services locally
 
 1. Wait for the thing to do the thing.  It's gotta load the stuff.
 
+1. Through the next few steps, if you hit an "Unable to find Main" or fields are grayed out, reimport the project:
+
+    1. View > Tool Windows > Gradle
+
+    1. In the Gradle window, right click "Orca" and then click "Reimport Gradle Project"
+
 1. In the top right corner of the project window, there's a "Add Configuration" button.  Click it.
 
 1. Click the little '+' sign in the top left corner, and select "Application"
