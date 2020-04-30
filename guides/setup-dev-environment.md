@@ -316,7 +316,7 @@ This assumes you have a Github account, and are logged in.
         2020-04-30 10:17:44.413  INFO 53937 --- [           main] i.a.p.s.wait.random.RandomWaitPlugin     : [] RandomWaitPlugin.start()
         ```
 
-    1. If you see "no class Main.main" or something, in the Gradle window, try right click on "orca" and reimport Gradle project.
+    1. If you see "no class Main.main" or something, in the Gradle window, try right click on "orca" and reimport Gradle project and try again.
 
 1. Test your stuff
 
