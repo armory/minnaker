@@ -57,7 +57,7 @@ Prereqs:
 
 1.   When it's done, you'll get the IP address of Minnaker.  Remember this (or you can always just run spin_endpoint)
 
-      *(if you accidentally forget to use no auth or open source, you can run `./minnaker/scripts/utils/remove_auth.sh` and `./minnaker/scripts/switch_to_oss.sh`)*
+      *(if you accidentally forget to use no auth or open source, you can run `./minnaker/scripts/utils/remove_auth.sh` and `./minnaker/scripts/utils/switch_to_oss.sh`)*
 
 1. Configure Minnaker to listen on all ports:
 
