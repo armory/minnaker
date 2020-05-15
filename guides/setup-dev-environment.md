@@ -59,12 +59,6 @@ Prereqs:
 
       *(if you accidentally forget to use no auth or open source, you can run `./minnaker/scripts/utils/remove_auth.sh` and `./minnaker/scripts/switch_to_oss.sh`)*
 
-1. Configure Minnaker to listen on all ports:
-
-    ```bash
-    ./minnaker/scripts/utils/expose_local.sh
-    ```
-
 **Decide which services you want to run locally**
 
 This example uses Orca, but you can run any number of services locally

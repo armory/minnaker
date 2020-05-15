@@ -29,6 +29,9 @@ for svc in $(cat ${BASE_DIR}/.hal/all_services); do
   echo "Adding Minnaker reference to ${svc} to dev config..."
   PORT=$(kubectl get svc spin-${svc} -ojsonpath='{.spec.ports[0].port}')
   yq w -i ${BASE_DIR}/.hal/spinnaker-local.yml services.${svc}.baseUrl http://${MINNAKER_IP}:${PORT}
+  echo "Configuring svc/spin-${svc} to type LoadBalancer"
+  touch ${BASE_DIR}/.hal/default/service-settings/${SVC}.yml
+  yq w -i ${BASE_DIR}/.hal/default/service-settings/${SVC}.yml kubernetes.serviceType LoadBalancer
 done
 
 echo "Configuring Minnaker for these services:"
@@ -71,6 +74,9 @@ echo "Place this file at '~/.spinnaker/spinnaker-local.yml' on your workstation"
 echo "--------------"
 cat ${BASE_DIR}/.hal/spinnaker-local.yml
 echo "--------------"
+
+echo "Deleting old service objects..."
+kubectl --context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE} delete svc -l app=spin
 
 echo "Applying changes:"
 kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal deploy apply"
