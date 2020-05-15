@@ -64,7 +64,8 @@ if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
 else
   printf "Using Armory Spinnaker"
-  HALYARD_IMAGE="armory/halyard-armory:1.9.0"
+  # This is defined in functions.sh
+  HALYARD_IMAGE="${ARMORY_HALYARD_IMAGE}"
 fi
 
 echo "Setting the Halyard Image to ${HALYARD_IMAGE}"

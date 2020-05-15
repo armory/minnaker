@@ -1,4 +1,6 @@
 
+ARMORY_HALYARD_IMAGE="armory/halyard-armory:1.9.1"
+
 install_k3s () {
   curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
 }

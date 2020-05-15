@@ -194,16 +194,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-# if [[ ${OPEN_SOURCE} -eq 1 ]]; then
-#   printf "Using OSS Spinnaker"
-#   HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
-# else
-#   printf "Using Armory Spinnaker"
-#   HALYARD_IMAGE="armory/halyard-armory:1.9.0"
-# fi
-
-# echo "Setting the Halyard Image to ${HALYARD_IMAGE}"
-
 # Scaffold out directories
 if [[ ${LINUX} -eq 1 ]]; then
   echo "Running minnaker setup for Linux"
