@@ -122,7 +122,7 @@ hydrate_manifest_mariadb () {
   # We actually don't need the sed entry for BASE_DIR anymore, but leaving for later
   if [[ ! -e ${BASE_DIR}/manifests/mariadb.yml ]]; then
     sed \
-      -e "s|MYSQL_ROOT_PASSWORD|${MYSQL_PASSWORD}|g" \
+      -e "s|MARIADB_PASSWORD|${MYSQL_PASSWORD}|g" \
       -e "s|BASE_DIR|${BASE_DIR}|g" \
     ${BASE_DIR}/templates/mariadb.yml \
     | tee ${BASE_DIR}/manifests/mariadb.yml
