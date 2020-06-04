@@ -174,7 +174,7 @@ Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 ## Troubleshooting
 
-### You encounter the following error during install: curl: (22) The requested URL returned error: 503 Service Unavailable:
+### You encounter the following error during install: Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in /etc/spinnaker/.hal/public_endpoint): curl: (22) The requested URL returned error: 503 Service Unavailable
 
 Minnaker uses `ifconfig.co` to determine your public IP address. Sometimes, this service is unavailable.
 
