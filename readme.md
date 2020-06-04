@@ -174,6 +174,17 @@ Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 ## Troubleshooting
 
+### You encounter the following error during install: curl: (22) The requested URL returned error: 503 Service Unavailable:
+
+Minnaker uses `ifconfig.co` to determine your public IP address. Sometimes, this service is unavailable.
+
+To resolve this issue, perform the following steps:
+
+1. Remove the following file: `/etc/spinnaker/.hal/public_endpoint`.
+2. Run the install script again.
+
+### General Troubleshooting
+
 Under the hood, Minnaker just wraps Halyard (or Operator, depending on which version you're using), so it still runs all the components of Spinnaker as Kubernetes pods in the `spinnaker` namespace.  You can use standard Kubernetes troubleshooting steps to troubleshoot Spinnaker components.
 
 For example, to see all the components of Minnaker:
