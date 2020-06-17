@@ -34,7 +34,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 * On Ubuntu, the Minnaker installer will install K3s for you (a minimal installation of Kubernetes), so you do not have to pre-install Docker or Kubernetes.
 
-## Changelog 
+## Changelog
 
 * As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
 * As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
@@ -111,11 +111,11 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     ```
 
 3. In your browser, navigate to the IP_ADDR (https://IP/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
-     
+
      If you installed Minnaker on a local VM, you must access it from your local machine. If you deployed Minnaker in the cloud, such as an EC2 instance, you can access Spinnaker from any machine that has access to that 'Public IP'.
 
 4. Log in to Deck with the following credentials:
-   
+
     Username: `admin`
 
     Password: <Password from step 2>   
@@ -136,13 +136,22 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     ```bash
     hal config version
     ```
-    All Halyard configuration files are stored in `/etc/spinnaker/.hal`
+
+	 All Halyard configuration files are stored in `/etc/spinnaker/.hal`
 
     For more information about Armory's Halyard, see [Armory Halyard commands](https://docs.armory.io/spinnaker/armory_halyard/).
 
     For more information about open source Halyard, see [Halyard commands](https://www.spinnaker.io/reference/halyard/commands/).    
-  
+
 4. When finished, use the `exit` command to leave the pod.
+
+## Updating Halyard
+
+1. SSH into the machine where you have installed Spinnaker
+2. Change the Halyard version in `/etc/spinnaker/manifests/halyard.yml`
+3. `kubectl apply -f halyard.yml`
+
+Access the Halyard pod and run `hal --version` to verify that Halyard has been updated.
 
 ## Next Steps
 
