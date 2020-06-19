@@ -15,10 +15,10 @@
 # limitations under the License.
 ################################################################################
 
-ARMORY_HALYARD_IMAGE="armory/halyard-armory:1.9.2"
+ARMORY_HALYARD_IMAGE="armory/halyard-armory:1.9.4"
 
 install_k3s () {
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.17.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 install_yq () {
