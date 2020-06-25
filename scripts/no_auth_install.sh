@@ -25,7 +25,7 @@ print_help () {
   set +x
   echo "Usage: install.sh"
   echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
-  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
+  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
@@ -116,8 +116,11 @@ hydrate_templates
 conditional_copy
 
 ### Set up Kubernetes environment
+echo "Installing K3s"
 install_k3s
+echo "Setting kubernetes context to Spinnaker namespace"
 sudo env "PATH=$PATH" kubectl config set-context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE}
+echo "Installing yq"
 install_yq
 
 ### Create all manifests:
@@ -126,6 +129,7 @@ install_yq
 # - minio
 # - clusteradmin
 # - ingress
+echo "Creating manifests"
 kubectl --context ${KUBERNETES_CONTEXT} apply -f ${BASE_DIR}/manifests/namespace.yml
 kubectl --context ${KUBERNETES_CONTEXT} apply -f ${BASE_DIR}/manifests
   
