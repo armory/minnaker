@@ -55,14 +55,14 @@ install_yq () {
 }
 
 detect_endpoint () {
-  if [[ ! -f ${BASE_DIR}/.hal/public_endpoint ]]; then
+  if [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; then
     if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
       echo "Using provided public IP ${PUBLIC_ENDPOINT}"
       echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
       touch ${BASE_DIR}/.hal/public_endpoint_provided
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-        while [[ ! -f ${BASE_DIR}/.hal/public_endpoint || $(wc -l < ${BASE_DIR}/.hal/public_endpoint) -eq 0 ]]; do
+        while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
           echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
           sleep 1
           curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
@@ -80,21 +80,21 @@ detect_endpoint () {
 }
 
 generate_passwords () {
-  if [[ ! -f ${BASE_DIR}/.hal/.secret/minio_password ]]; then
+  if [[ ! -s ${BASE_DIR}/.hal/.secret/minio_password ]]; then
     echo "Generating Minio password (${BASE_DIR}/.hal/.secret/minio_password):"
     openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/minio_password
   else
     echo "Minio password already exists (${BASE_DIR}/.hal/.secret/minio_password)"
   fi
 
-  if [[ ! -f ${BASE_DIR}/.hal/.secret/mysql_password ]]; then
+  if [[ ! -s ${BASE_DIR}/.hal/.secret/mysql_password ]]; then
     echo "Generating MariaDB (MySQL) password (${BASE_DIR}/.hal/.secret/mysql_password):"
     openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/mysql_password
   else
     echo "MariaDB (MySQL) password already exists (${BASE_DIR}/.hal/.secret/mysql_password)"
   fi
 
-  if [[ ! -f ${BASE_DIR}/.hal/.secret/spinnaker_password ]]; then
+  if [[ ! -s ${BASE_DIR}/.hal/.secret/spinnaker_password ]]; then
     echo "Generating Spinnaker password (${BASE_DIR}/.hal/.secret/spinnaker_password):"
     openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/spinnaker_password
   else

@@ -23,7 +23,7 @@ set -e
 # - Filename for UUID
 # - Purpose of UUID (only used for the output text)
 function generate_or_use_uuid () {
-  if [[ ! -f $1 ]]; then
+  if [[ ! -s $1 ]]; then
     echo "Generating $2 UUID ($1)"
     uuidgen > ${1}
   else
@@ -43,14 +43,14 @@ KAYENTA_BUCKET="kayenta"
 
 cp -rv ${PROJECT_DIR}/templates/addons/demo ${BASE_DIR}/templates/
 
-if [[ ! -f ${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid ]]; then
+if [[ ! -s ${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid ]]; then
   echo "Generating Canary Config UUID (${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid)"
   uuidgen > ${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid
 else
   echo "Canary Config UUID already exists (${BASE_DIR}/.hal/.secret/demo_canary_pipeline_uuid)"
 fi
 
-if [[ ! -f ${BASE_DIR}/.hal/.secret/demo_canary_config_uuid ]]; then
+if [[ ! -s ${BASE_DIR}/.hal/.secret/demo_canary_config_uuid ]]; then
   echo "Generating Canary Config UUID (${BASE_DIR}/.hal/.secret/demo_canary_config_uuid)"
   uuidgen > ${BASE_DIR}/.hal/.secret/demo_canary_config_uuid
 else

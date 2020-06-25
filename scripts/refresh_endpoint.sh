@@ -24,7 +24,7 @@
 # # Otherwise, if the previous public endpoint was provided was a flag, that endpoint will be used
 # # Otherwise, the public endpoint will be re-detected
 
-set -x
+# set -x
 set -e
 
 ##### Functions
@@ -40,11 +40,11 @@ detect_endpoint () {
     echo "Using provided public endpoint ${PUBLIC_ENDPOINT}"
     echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
     touch ${BASE_DIR}/.hal/public_endpoint_provided
-  elif [[ ! -f ${BASE_DIR}/.hal/public_endpoint_provided ]]; then
+  elif [[ ! -s ${BASE_DIR}/.hal/public_endpoint_provided ]]; then
     if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
       # Remove the entry
       >${BASE_DIR}/.hal/public_endpoint
-      while [[ ! -f ${BASE_DIR}/.hal/public_endpoint || $(wc -l < ${BASE_DIR}/.hal/public_endpoint) -eq 0 ]]; do
+      while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
         echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
         sleep 1
         curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint

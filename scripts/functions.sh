@@ -27,14 +27,14 @@ install_yq () {
 }
 
 detect_endpoint () {
-  if [[ ! -f ${BASE_DIR}/.hal/public_endpoint ]]; then
+  if [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; then
     if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
       echo "Using provided public IP ${PUBLIC_ENDPOINT}"
       echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
       touch ${BASE_DIR}/.hal/public_endpoint_provided
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-        while [[ ! -f ${BASE_DIR}/.hal/public_endpoint || $(wc -l < ${BASE_DIR}/.hal/public_endpoint) -eq 0 ]]; do
+        while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
           echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
           sleep 1
           curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
@@ -54,7 +54,7 @@ detect_endpoint () {
 generate_passwords () {
   # for PASSWORD_ITEM in spinnaker_password minio_password mysql_password; do
   for PASSWORD_ITEM in spinnaker_password; do
-    if [[ ! -f ${BASE_DIR}/.hal/.secret/${PASSWORD_ITEM} ]]; then
+    if [[ ! -s ${BASE_DIR}/.hal/.secret/${PASSWORD_ITEM} ]]; then
       echo "Generating password [${BASE_DIR}/.hal/.secret/${PASSWORD_ITEM}]:"
       openssl rand -base64 36 | tee ${BASE_DIR}/.hal/.secret/${PASSWORD_ITEM}
     else
