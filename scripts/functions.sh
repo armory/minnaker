@@ -36,9 +36,9 @@ detect_endpoint () {
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
         while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
           echo "Detected cloud metadata endpoint"
-          echo "Trying to determine public IP address (using 'dig +short myip.opendns.com @resolver1.opendns.com')"
+          echo "Trying to determine public IP address (using 'dig +short TXT o-o.myaddr.l.google.com @ns1.google.com')"
           sleep 1
-          dig +short myip.opendns.com @resolver1.opendns.com | tee ${BASE_DIR}/.hal/public_endpoint
+          dig +short TXT o-o.myaddr.l.google.com @ns1.google.com | sed 's|"||g' | tee ${BASE_DIR}/.hal/public_endpoint
         done
       else
         echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
