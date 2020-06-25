@@ -39,7 +39,7 @@ print_help () {
   set +x
   echo "Usage: install.sh"
   echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
-  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than detecting using ifconfig.co)"
+  echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
@@ -63,9 +63,10 @@ detect_endpoint () {
     else
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
         while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
-          echo "Detected cloud metadata endpoint; Detecting Public IP Address from ifconfig.co (and storing in ${BASE_DIR}/.hal/public_endpoint):"
+          echo "Detected cloud metadata endpoint"
+          echo "Trying to determine public IP address (using 'dig +short myip.opendns.com @resolver1.opendns.com')"
           sleep 1
-          curl -sSfL ifconfig.co | tee ${BASE_DIR}/.hal/public_endpoint
+          dig +short myip.opendns.com @resolver1.opendns.com | tee ${BASE_DIR}/.hal/public_endpoint
         done
       else
         echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
