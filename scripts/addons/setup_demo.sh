@@ -23,7 +23,7 @@ set -e
 # - Filename for UUID
 # - Purpose of UUID (only used for the output text)
 function generate_or_use_uuid () {
-  if [[ ! -f $1 ]]; then
+  if [[ ! -s $1 ]]; then
     echo "Generating $2 UUID ($1)"
     uuidgen > ${1}
   else
