@@ -63,7 +63,13 @@ Prereqs:
 
 This example uses Orca, but you can run any number of services locally
 
-1. Configure Minnaker to expect the relevant service to be external
+1. First, run this script to ensure each Spinnaker service gets a K8s LoadBalancer
+
+    ```bash
+    ./minnaker/scripts/utils/expose_local.sh
+    ```
+    
+2. Configure Minnaker to expect the relevant service to be external
 
     ```bash
     ./minnaker/scripts/utils/external_service_setup.sh orca
