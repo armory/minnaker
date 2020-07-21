@@ -38,7 +38,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 * As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
 * As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
-* If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](switch_to_paths.md).
+* If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](https://github.com/armory/minnaker/wiki/I.-Guides:-Switching-from-old-Minnaker-(port-based-routing)-to-Minnaker-using-path-based-routing).
 * As of 10/18/2019, Minnaker no longer uses port 8084.
 
 ---
