@@ -46,7 +46,7 @@ print_help () {
 
 install_k3s () {
   # curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--no-deploy=traefik" K3S_KUBECONFIG_MODE=644 sh -
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/.hal/public_endpoint)" INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 install_yq () {
@@ -223,10 +223,10 @@ if [[ ${LINUX} -eq 1 ]]; then
 
   sudo chown -R 1000 ${BASE_DIR}
 
+  detect_endpoint
+
   install_k3s
   install_yq
-
-  detect_endpoint
 
   sudo env "PATH=$PATH" kubectl config set-context default --namespace spinnaker
 
