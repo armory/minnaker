@@ -43,7 +43,7 @@ done
 
 for svc in $(cat ${BASE_DIR}/.hal/all_services); do
   echo "Adding Minnaker reference to ${svc} to dev config..."
-  PORT=$(kubectl get svc spin-${svc} -ojsonpath='{.spec.ports[0].port}')
+  PORT=$(kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} get svc spin-${svc} -ojsonpath='{.spec.ports[0].port}')
   yq w -i ${BASE_DIR}/.hal/spinnaker-local.yml services.${svc}.baseUrl http://${MINNAKER_IP}:${PORT}
   echo "Configuring svc/spin-${svc} to type LoadBalancer"
   touch ${BASE_DIR}/.hal/default/service-settings/${SVC}.yml
@@ -53,7 +53,7 @@ done
 echo "Configuring Minnaker for these services:"
 for svc in $(cat ${BASE_DIR}/.hal/external_services); do
   echo "Adding external reference to ${svc} to Minnaker config..."
-  PORT=$(kubectl get svc spin-${svc} -ojsonpath='{.spec.ports[0].port}')
+  PORT=$(kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} get svc spin-${svc} -ojsonpath='{.spec.ports[0].port}')
   yq w -i ${BASE_DIR}/.hal/default/profiles/spinnaker-local.yml services.${svc}.baseUrl http://${EXTERNAL_IP}:${PORT}
   echo "Scaling Minnaker ${svc} to 0 instances..."
   yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].deploymentEnvironment.customSizing.spin-${svc}.replicas 0
