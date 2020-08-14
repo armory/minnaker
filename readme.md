@@ -8,7 +8,7 @@ Minnaker is currently intended for POCs and trying out Spinnaker.
 
 Minnaker performs the following actions when run on a single Linux instance:
 
-* Installs [k3s](http://rancher.com) with Traefik turned off.
+* Installs [k3s](https://k3s.io/) with Traefik turned off.
 * Installs minio in k3s with a local volume.
 * Sets up **Halyard** in a Docker container (running in Kubernetes).
 * Installs **Spinnaker** using Halyard.
