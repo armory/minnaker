@@ -78,8 +78,8 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
     ```bash
-    export PRIVATE_ENDPOINT=192.168.10.1
-    ./scripts/install.sh -o -P $PRIVATE_ENDPOINT
+    export PUBLIC_ENDPOINT=192.168.10.1
+    ./scripts/install.sh -o -P $PUBLIC_ENDPOINT
     ```
 
     Installation can take between 5-10 minutes to complete depending on VM size.
