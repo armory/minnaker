@@ -32,19 +32,13 @@ Prereqs:
 1. Start a multipass vm **with 2 cores, 10GB of memory, 30GB of storage**
 
     ```bash
-    multipass launch -c 2 -m 10G -d 30G
-    ```
-
-1. Get the name of your multipass vm
-
-    ```bash
-    multipass list
+    multipass launch -c 2 -m 10G -d 30G --name minnaker-vm
     ```
 
 1. Shell into your multipass vm
 
     ```bash
-    multipass shell <vm-name>
+    multipass shell minnaker-vm
     ```
 
 1. Download and install Minnaker (use open source, no-auth mode)
