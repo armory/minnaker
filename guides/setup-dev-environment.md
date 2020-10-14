@@ -34,6 +34,8 @@ Prereqs:
     ```bash
     multipass launch -c 2 -m 10G -d 30G --name minnaker-vm
     ```
+    Troubleshooting:
+    Mac OS X: If you get `multipass timed out waiting for response` when running this command make sure you have rebooted after installing.
 
 1. Shell into your multipass vm
 
