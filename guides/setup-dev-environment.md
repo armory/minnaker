@@ -110,81 +110,8 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
     ```bash
     ./minnaker/scripts/utils/expose_local.sh
     ```
-    
-1. [minnaker-vm] Get your kubernetes config file
 
-    ```bash
-    kubectl config view --raw
-    ```
-
-    Example Output:
-    ```
-    apiVersion: v1
-    clusters:
-    - cluster:
-        certificate-authority-data: YOUR_CERT_HERE
-        server: https://127.0.0.1:6443
-    name: default
-    contexts:
-    - context:
-        cluster: default
-        namespace: spinnaker
-        user: default
-    name: default
-    current-context: default
-    kind: Config
-    preferences: {}
-    users:
-    - name: default
-    user:
-        password: YOUR_PASSWORD_HERE
-        username: admin
-    ```
-
-2. [host] Save the command output from above command `kubectl config view --raw` to `~/.kube/minnaker` on host machine
-
-3. [minnaker-vm] To get the IP of minnaker-vm
-
-   ```bash
-   cat /etc/spinnaker/.hal/public_endpoint
-   ```
-
-4. [host] Edit `~/.kube/minnaker` to have the IP address of the minnaker-vm
-    New File:
-    ```
-    apiVersion: v1
-    clusters:
-    - cluster:
-        certificate-authority-data: YOUR_CERT_HERE
-        server: https://192.168.64.6:6443
-    name: default
-    contexts:
-    - context:
-        cluster: default
-        namespace: spinnaker
-        user: default
-    name: default
-    current-context: default
-    kind: Config
-    preferences: {}
-    users:
-    - name: default
-    user:
-        password: YOUR_PASSWORD_HERE
-        username: admin
-    ```
-
-5. [host] Setup `kubectl` from HOST to check on the deploy
-
-    ```
-    export KUBECONFIG=~/.kube/minnaker
-    ```
-    or always specify `--kubeconfig ~/.kube/minnaker`
-    ```
-    kubectl --kubeconfig command
-    ```
-
-6. [host] You can now run `kubectl` commands
+6. [minnaker-vm] Check on the status of spinnaker
 
     ```
     kubectl get pods -n spinnaker
@@ -307,6 +234,86 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
 23. To build and run the thing, click the little green triangle next to your configuration (top right corner, kinda)
 
 Now magic happens.
+
+## Setup kubectl on host
+
+1. [minnaker-vm] Get your kubernetes config file
+
+    ```bash
+    kubectl config view --raw
+    ```
+
+    Example Output:
+    ```
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data: YOUR_CERT_HERE
+        server: https://127.0.0.1:6443
+    name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: spinnaker
+        user: default
+    name: default
+    current-context: default
+    kind: Config
+    preferences: {}
+    users:
+    - name: default
+    user:
+        password: YOUR_PASSWORD_HERE
+        username: admin
+    ```
+
+1. [host] Save the command output from above command `kubectl config view --raw` to `~/.kube/minnaker` on host machine
+
+1. [minnaker-vm] To get the IP of minnaker-vm
+
+   ```bash
+   cat /etc/spinnaker/.hal/public_endpoint
+   ```
+
+1. [host] Edit `~/.kube/minnaker` to have the IP address of the minnaker-vm
+    New File:
+    ```
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data: YOUR_CERT_HERE
+        server: https://192.168.64.6:6443
+    name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: spinnaker
+        user: default
+    name: default
+    current-context: default
+    kind: Config
+    preferences: {}
+    users:
+    - name: default
+    user:
+        password: YOUR_PASSWORD_HERE
+        username: admin
+    ```
+
+1. [host] Setup `kubectl` from HOST to check on the deploy
+
+    ```
+    export KUBECONFIG=~/.kube/minnaker
+    ```
+    or always specify `--kubeconfig ~/.kube/minnaker`
+    ```
+    kubectl --kubeconfig command
+    ```
+
+1. [host] Now you can run local kubectl command
+   ```bash
+   kubectl get pods -n spinnaker
+   ```
 
 ## Start doing plugin-ey things
 
