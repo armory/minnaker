@@ -235,7 +235,25 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
 
 Now magic happens.
 
-## Setup kubectl on host
+## Some Cleanup Commands for later
+
+### How to reset your minnaker-vm
+
+[minnaker-vm] Run the following to no longer debug from host
+
+    ```bash
+    ./minnaker/scripts/utils/external_service_setup.sh
+    ```
+
+### How to stop spinnaker
+
+[host] Run the following to stop the minnaker-vm (spinnaker)
+
+```bash
+multipass stop minnaker-vm
+```
+
+## [Optional] Setup kubectl on host
 
 1. [minnaker-vm] Get your kubernetes config file
 
