@@ -127,6 +127,11 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
    ./minnaker/scripts/utils/external_service_setup.sh orca
    ```
 
+   You can also expose multiple services
+   ```bash
+   ./minnaker/scripts/utils/external_service_setup.sh orca echo
+   ```
+
 9. [host] Setup your host config files 
    - Create/edit the file `~/.spinnaker/spinnaker-local.yml`, and paste the previously copied output.
     ```
