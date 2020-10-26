@@ -327,13 +327,15 @@ multipass stop minnaker-vm
 
     ```
     export KUBECONFIG=~/.kube/minnaker
+    kubectl get pods -n spinnaker
+
     ```
     or always specify `--kubeconfig ~/.kube/minnaker`
     ```
-    kubectl --kubeconfig command
+    kubectl --kubeconfig ~/.kube/minnaker get pods -n spinnaker
     ```
 
-1. [host] Now you can run local kubectl command
+2. [host] Now you can run local kubectl command
    ```bash
    kubectl get pods -n spinnaker
    ```
