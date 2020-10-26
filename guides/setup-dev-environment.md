@@ -1,47 +1,97 @@
-# Plugin / Dev environment
+# Setup Local Debugging for Spinnaker Services
 
-These notes are very unformatted.
-
-Assume OSX with at least 16GB of memory and 30GB available storage
+## Minimum System requirements
+- Windows or Mac OS X
+- 16GB of Memory
+- 30GB of Available Storage
 
 This allows you to do something like this:
 
-* OSX workstation, with an Ubuntu VM running in multipass, with everything directly wired up.
+* OSX/Windows workstation, with an Ubuntu VM running in multipass, with everything directly wired up.
 * Some services running locally in your workstation (via IntelliJ)
 * All other services running in Minnaker (on the VM)
 
 For example:
-* OSX using IP 192.168.64.1 and the VM using 192.168.64.10
+* OSX/Windows using IP 192.168.64.1 and the VM using 192.168.64.6
 * Orca running on http://192.168.64.1:8083
-* All other services running on 192.168.64.10 (for example, Clouddriver will be on http;//192.168.64.10:7002)
+* All other services running on 192.168.64.6 (for example, Clouddriver will be on http://192.168.64.6:7002)
 
-Prereqs:
+# Install Instructions
 
-* Install a JDK (I don't know what's necessary, but I have OpenJDK 1.8:
+## Mac OS X
 
+* Install [homebrew](https://brew.sh/)
+
+    ```bash
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     ```
-    openjdk version "1.8.0_242"
-    OpenJDK Runtime Environment (AdoptOpenJDK)(build 1.8.0_242-b08)
-    OpenJDK 64-Bit Server VM (AdoptOpenJDK)(build 25.242-b08, mixed mode)
+
+## Windows or Mac OS X
+
+* Install a [JDK](https://adoptopenjdk.net/installation.html) 11.0.8
+
+    * Mac OS X
+
+    ```bash
+    brew tap AdoptOpenJDK/openjdk
+    brew cask install adoptopenjdk11
     ```
-* Install Multipass: https://multipass.run/
-* Install IntelliJ
+
+    * Windows [instructions](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+    
+
+* Install [Multipass](https://multipass.run/)
+
+    * Mac instructions
+    ```bash
+    brew cask install multipass
+    ```
+    * Windows [instructions](https://multipass.run/download/windows)
+    
+* Install [IntelliJ Community Edition](https://www.jetbrains.com/idea/download/)
+
+    * Mac instructions
+    ```bash
+    brew cask install intellij-idea-ce
+    ```
+    * Windows [instructions](https://adoptopenjdk.net/installation.html#x64_win-jdk)
+
+* Install Yarn (installs Node.js if not installed).
+    * Mac [instructions](https://classic.yarnpkg.com/en/docs/install#mac-stable)
+    ```bash
+    brew install yarn
+    ```
+    * Windows [instructions](https://classic.yarnpkg.com/en/docs/install#windows-stable)
+
+* Install `kubectl`.
+    * Mac instructions
+    ```bash
+    brew install kubectl
+    ```
+    * Windows [instructions](https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-windows)
+
+
+# Getting Spinnaker Up and Running
+
+Open two terminals one will be for shell access into minnaker-vm the other will be for host machine.
+- Windows or Mac OS X terminal will be referred to as [host]
+- minnaker-vm terminal will be referred to as [minnaker-vm]
 
 ## Install Spinnaker in a Multipass VM
 
-1. Start a multipass vm **with 2 cores, 10GB of memory, 30GB of storage**
+1. [minnaker-vm] Start a multipass vm **with 2 cores, 10GB of memory, 30GB of storage**
 
     ```bash
     multipass launch -c 2 -m 10G -d 30G --name minnaker-vm
     ```
 
-1. Shell into your multipass vm
+1. [minnaker-vm] Shell into your multipass vm
 
     ```bash
     multipass shell minnaker-vm
     ```
 
-1. Download and install Minnaker (use open source, no-auth mode)
+1. [minnaker-vm] Download and install Minnaker (use open source, no-auth mode)
 
     ```bash
     curl -LO https://github.com/armory/minnaker/releases/latest/download/minnaker.tgz
@@ -49,48 +99,75 @@ Prereqs:
     ./minnaker/scripts/no_auth_install.sh -o
     ```
 
-1.   When it's done, you'll get the IP address of Minnaker.  Remember this (or you can always just run spin_endpoint)
+1. [minnaker-vm] When it's done, you'll get the IP address of Minnaker.  Remember this (or you can always just run `cat /etc/spinnaker/.hal/public_endpoint`)
 
       *(if you accidentally forget to use no auth or open source, you can run `./minnaker/scripts/utils/remove_auth.sh` and `./minnaker/scripts/utils/switch_to_oss.sh`)*
 
-**Decide which services you want to run locally**
+## Prepare Host machine to connect to the Minnaker-VM
 
-This example uses Orca, but you can run any number of services locally
-
-1. First, run this script to ensure each Spinnaker service gets a K8s LoadBalancer
+1. [minnaker-vm] Run this script to ensure each Spinnaker service gets a K8s LoadBalancer and can be accessed from your host machine.
 
     ```bash
     ./minnaker/scripts/utils/expose_local.sh
     ```
-    
-2. Configure Minnaker to expect the relevant service to be external
 
-    ```bash
-    ./minnaker/scripts/utils/external_service_setup.sh orca
+6. [minnaker-vm] Check on the status of spinnaker
+
     ```
-
-    If you want multiple, specify them space delimited:
-
-    ```bash
-    ./minnaker/scripts/utils/external_service_setup.sh orca echo
+    kubectl get pods -n spinnaker
     ```
+    All pods need to show `1/1` for `READY`.
 
-    **Every time you run this, it will remove the previous configuration.**
+7. [host] You can now browse to spinnaker at https://192.168.64.6
+   - Troubleshooting:
+     - `Service Unavailable`: wait until spinnaker starts up, it can take a while to start up (download all docker images) the above step will show you if it is up and running.
 
-1. Part of the output will be a section that says `Place this file at '~/.spinnaker/spinnaker-local.yml' on your workstation`.  Copy that section (between the lines)
+8. [minnaker-vm] Expose the service you want to debug (example here is orca)
+   ```bash
+   ./minnaker/scripts/utils/external_service_setup.sh orca
+   ```
 
-### Switch to your OSX workstation
+   You can also expose multiple services
+   ```bash
+   ./minnaker/scripts/utils/external_service_setup.sh orca echo
+   ```
 
-1. Create/edit the file `~/.spinnaker/spinnaker-local.yml`, and paste the previously copied output.
+9. [host] Setup your host config files 
+   - Create/edit the file `~/.spinnaker/spinnaker-local.yml`, and paste the previously copied output.
+    ```
+    services:
+      front50:
+        baseUrl: http://192.168.64.6:8080
+      redis:
+        baseUrl: http://192.168.64.6:6379
+      clouddriver:
+        baseUrl: http://192.168.64.6:7002
+      orca:
+        host: 0.0.0.0
+      echo:
+        baseUrl: http://192.168.64.6:8089
+      deck:
+        baseUrl: http://192.168.64.6:9000
+      rosco:
+        baseUrl: http://192.168.64.6:8087
+      gate:
+        baseUrl: http://192.168.64.6:8084
+    ```
+   - Create/edit the config file for the service you are going to debug (example orca).
+     - [minnaker-vm] 
+        ```bash
+        cat /etc/spinnaker/.hal/default/staging/orca.yml
+        ```
+     - [host] create a `~/.spinnaker/orca.yml` file with the above files contents.
 
-1. Choose a working directory, and go there.  I usually use `~/git/spinnaker`
+10. Choose a working directory, and go there.  I usually use `~/git/spinnaker`
 
     ```bash
     mkdir -p ~/git/spinnaker
     cd ~/git/spinnaker
     ```
 
-1. Clone the service you want
+11. Clone the service you want
 
     ```bash
     git clone https://github.com/spinnaker/orca.git
@@ -102,66 +179,166 @@ This example uses Orca, but you can run any number of services locally
     git clone git@github.com:spinnaker/orca.git
     ```
 
-1. Change the branch
+12. Change the branch
 
     ```bash
     cd orca
     git branch -a
     ```
 
-    You'll see a list of branches (like `remotes/origin/release-1.19.x`).  The last bit (after the last slash) is the branch name.  Check out that branch.
+    You'll see a list of branches (like `remotes/origin/release-1.22.x`).  The last bit (after the last slash) is the branch name.  Check out that branch.
 
     ```bash
-    git checkout release-1.19.x
+    git checkout release-1.22.x
     ```
 
-1. Open IntelliJ
+13. Open IntelliJ
 
-1. Open your project
+14. Open your project
 
     * If you don't have a project open, you'll see a "Welcome to IntellJ IDEA".
 
         1. Click "Open or Import"
 
-        1. Navigate to your directory (e.g., `~/git/spinnaker/orca`)
+        2. Navigate to your directory (e.g., `~/git/spinnaker/orca`)
 
-        1. Click on `build.gradle` and click "Open"
+        3. Click on `build.gradle` and click "Open"
 
-        1. Select "Open as Project"
+        4. Select "Open as Project"
 
     * If you already have one or more projects open, do the following:
 
         1. Use the menu "File" > "Open"
 
-        1. Navigate to your directory (e.g., `~/git/spinnaker/orca`)
+        2. Navigate to your directory (e.g., `~/git/spinnaker/orca`)
 
-        1. Click on `build.gradle` and click "Open"
+        3. Click on `build.gradle` and click "Open"
 
-        1. Select "Open as Project"
+        4. Select "Open as Project"
 
-1. Wait for the thing to do the thing.  It's gotta load the stuff.
+15. Wait for the thing to do the thing.  It's gotta load the stuff.
 
-1. Through the next few steps, if you hit an "Unable to find Main" or fields are grayed out, reimport the project:
+16. Through the next few steps, if you hit an "Unable to find Main" or fields are grayed out, reimport the project:
 
     1. View > Tool Windows > Gradle
 
-    1. In the Gradle window, right click "Orca" and then click "Reimport Gradle Project"
+    2. In the Gradle window, right click "Orca" and then click "Reimport Gradle Project"
 
-1. In the top right corner of the project window, there's a "Add Configuration" button.  Click it.
+17. In the top right corner of the project window, there's a "Add Configuration" button.  Click it.
 
-1. Click the little '+' sign in the top left corner, and select "Application"
+18. Click the little '+' sign in the top left corner, and select "Application"
 
-1. Give it a name.  Like "Main" or "Run Orca"
+19. Give it a name.  Like "Main" or "Run Orca"
 
-1. Click the three dots next to "Main Class".  Either wait for it to load and select "Main (com.netflix.spinnaker.orca) or click on "Project" and navigate to `orca > orca-web > src > main > groovy > com.netflix.spinnaker > orca > Main`
+20. Click the three dots next to "Main Class".  Either wait for it to load and select "Main (com.netflix.spinnaker.orca) or click on "Project" and navigate to `orca > orca-web > src > main > groovy > com.netflix.spinnaker > orca > Main`
 
-1. In the dropdown for "Use classpath of module", select "orca-web_main"
+21. In the dropdown for "Use classpath of module", select "orca-web_main"
 
-1. Click "Apply" and then "OK"
+22. Click "Apply" and then "OK"
 
-1. To build and run the thing, click the little green triangle next to your configuration (top right corner, kinda)
+23. To build and run the thing, click the little green triangle next to your configuration (top right corner, kinda)
 
 Now magic happens.
+
+## Some Cleanup Commands for later
+
+### How to reset your minnaker-vm
+
+[minnaker-vm] Run the following to no longer debug from host
+
+    ```bash
+    ./minnaker/scripts/utils/external_service_setup.sh
+    ```
+
+### How to stop spinnaker
+
+[host] Run the following to stop the minnaker-vm (spinnaker)
+
+```bash
+multipass stop minnaker-vm
+```
+
+## [Optional] Setup kubectl on host
+
+1. [minnaker-vm] Get your kubernetes config file
+
+    ```bash
+    kubectl config view --raw
+    ```
+
+    Example Output:
+    ```
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data: YOUR_CERT_HERE
+        server: https://127.0.0.1:6443
+    name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: spinnaker
+        user: default
+    name: default
+    current-context: default
+    kind: Config
+    preferences: {}
+    users:
+    - name: default
+    user:
+        password: YOUR_PASSWORD_HERE
+        username: admin
+    ```
+
+1. [host] Save the command output from above command `kubectl config view --raw` to `~/.kube/minnaker` on host machine
+
+1. [minnaker-vm] To get the IP of minnaker-vm
+
+   ```bash
+   cat /etc/spinnaker/.hal/public_endpoint
+   ```
+
+1. [host] Edit `~/.kube/minnaker` to have the IP address of the minnaker-vm
+    New File:
+    ```
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data: YOUR_CERT_HERE
+        server: https://192.168.64.6:6443
+    name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: spinnaker
+        user: default
+    name: default
+    current-context: default
+    kind: Config
+    preferences: {}
+    users:
+    - name: default
+    user:
+        password: YOUR_PASSWORD_HERE
+        username: admin
+    ```
+
+1. [host] Setup `kubectl` from HOST to check on the deploy
+
+    ```
+    export KUBECONFIG=~/.kube/minnaker
+    kubectl get pods -n spinnaker
+
+    ```
+    or always specify `--kubeconfig ~/.kube/minnaker`
+    ```
+    kubectl --kubeconfig ~/.kube/minnaker get pods -n spinnaker
+    ```
+
+2. [host] Now you can run local kubectl command
+   ```bash
+   kubectl get pods -n spinnaker
+   ```
 
 ## Start doing plugin-ey things
 
