@@ -12,7 +12,7 @@ This allows you to do something like this:
 * All other services running in Minnaker (on the VM)
 
 For example:
-* OSX/Windows using IP 192.168.64.1 and the VM using 192.168.64.10
+* OSX/Windows using IP 192.168.64.1 and the VM using 192.168.64.6
 * Orca running on http://192.168.64.1:8083
 * All other services running on 192.168.64.6 (for example, Clouddriver will be on http://192.168.64.6:7002)
 
