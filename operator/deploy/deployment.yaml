@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spinnaker-operator
-  namespace: spinnaker-operator
 spec:
   replicas: 1
   selector:
@@ -16,7 +15,7 @@ spec:
       serviceAccountName: spinnaker-operator
       containers:
         - name: spinnaker-operator
-          image: armory/armory-operator:0.4.0
+          image: armory/armory-operator:1.2.0
           command:
             - spinnaker-operator
           imagePullPolicy: IfNotPresent
@@ -28,7 +27,7 @@ spec:
             - name: OPERATOR_NAME
               value: "spinnaker-operator"
         - name: halyard
-          image: armory/halyard-armory:operator-0.4.x
+          image: armory/halyard-armory:operator-97b4194c9fce0616a995c2addaa0aad75a6e4627
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8064

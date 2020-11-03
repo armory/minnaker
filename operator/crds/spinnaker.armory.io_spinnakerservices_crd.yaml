@@ -105,6 +105,57 @@ spec:
                 type:
                   type: string
               type: object
+            kustomize:
+              additionalProperties:
+                properties:
+                  deployment:
+                    properties:
+                      patches:
+                        description: Patches is a list of patches, where each one
+                          can be either a Strategic Merge Patch or a JSON patch. Each
+                          patch can be applied to multiple target objects.
+                        items:
+                          type: string
+                        type: array
+                      patchesJson6902:
+                        description: JSONPatches is a list of JSONPatch for applying
+                          JSON patch. Format documented at https://tools.ietf.org/html/rfc6902
+                          and http://jsonpatch.com
+                        type: string
+                      patchesStrategicMerge:
+                        description: PatchesStrategicMerge specifies the relative
+                          path to a file containing a strategic merge patch.  Format
+                          documented at https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
+                          URLs and globs are not supported.
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  service:
+                    properties:
+                      patches:
+                        description: Patches is a list of patches, where each one
+                          can be either a Strategic Merge Patch or a JSON patch. Each
+                          patch can be applied to multiple target objects.
+                        items:
+                          type: string
+                        type: array
+                      patchesJson6902:
+                        description: JSONPatches is a list of JSONPatch for applying
+                          JSON patch. Format documented at https://tools.ietf.org/html/rfc6902
+                          and http://jsonpatch.com
+                        type: string
+                      patchesStrategicMerge:
+                        description: PatchesStrategicMerge specifies the relative
+                          path to a file containing a strategic merge patch.  Format
+                          documented at https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
+                          URLs and globs are not supported.
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                type: object
+              type: object
             networkPolicy:
               description: SpinnakerServiceStatus defines the observed state of SpinnakerService
               properties:
