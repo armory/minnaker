@@ -170,6 +170,6 @@ echo '' >>~/.bashrc
 echo 'source <(kubectl completion bash)' >>~/.bashrc          
 
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
-echo "https://${PUBLIC_ENDPOINT}"
+echo "http://${PUBLIC_ENDPOINT}"
 echo "username: 'admin'"
 echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
