@@ -107,15 +107,12 @@ echo "Running minnaker setup for Linux"
 # OSS Halyard uses 1000; we're using 1000 for everything
 sudo mkdir -p ${BASE_DIR}/.kube
 sudo mkdir -p ${BASE_DIR}/.hal/.secret
-
-id
-pwd
-set -x
+sudo chown -R 1000 ${BASE_DIR}
 
 detect_endpoint
 generate_passwords
 
-# Fix up operator manifests
+### Fix up operator manifests
 SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
 MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
@@ -137,9 +134,6 @@ if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -e "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
   echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
 fi
-
-sudo chown -R 1000 ${BASE_DIR}
-set +x
 
 ### Set up Kubernetes environment
 echo "Installing K3s"
