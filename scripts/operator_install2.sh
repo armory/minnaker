@@ -53,11 +53,11 @@ BASE_DIR=/etc/spinnaker
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o|--oss)
-      printf "Using OSS Spinnaker"
+      echo "Using OSS Spinnaker"
       OPEN_SOURCE=1
       ;;
     -x)
-      printf "Excluding from Minnaker metrics"
+      echo "Excluding from Minnaker metrics"
       MAGIC_NUMBER=${DEAD_MAGIC_NUMBER}
       ;;
     -P|--public-endpoint)
@@ -65,7 +65,7 @@ while [ "$#" -gt 0 ]; do
         PUBLIC_ENDPOINT=$2
         shift
       else
-        printf "Error: --public-endpoint requires an IP address >&2"
+        echo "Error: --public-endpoint requires an IP address >&2"
         exit 1
       fi
       ;;
@@ -73,12 +73,12 @@ while [ "$#" -gt 0 ]; do
       if [ -n $2 ]; then
         BASE_DIR=$2
       else
-        printf "Error: --base-dir requires a directory >&2"
+        echo "Error: --base-dir requires a directory >&2"
         exit 1
       fi
       ;;
     -n|--nowait)
-      printf "Will not wait for Spinnaker to come up"
+      echo "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
       ;;
     -h|--help)
@@ -92,11 +92,11 @@ done
 . ${PROJECT_DIR}/scripts/functions.sh
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
-  printf "Using OSS Spinnaker"
+  echo "Using OSS Spinnaker"
   SPIN_FLAVOR=oss
   VERSION=$(curl -s https://spinnaker.io/community/releases/versions/ | grep 'id="version-' | head -1 | sed -e 's/\(<[^<][^<]*>\)//g; /^$/d' | cut -d' ' -f2)
 else
-  printf "Using Armory Spinnaker"
+  echo "Using Armory Spinnaker"
   SPIN_FLAVOR=armory
   VERSION=$(curl -sL https://halconfig.s3-us-west-2.amazonaws.com/versions.yml | grep 'version: ' | awk '{print $NF}' | sort | tail -1)
 fi
