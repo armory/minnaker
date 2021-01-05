@@ -42,6 +42,7 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
+BASE_DIR=/etc/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
@@ -50,7 +51,6 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   exit 1
 fi
 
-BASE_DIR=/etc/spinnaker
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -63,7 +63,7 @@ while [ "$#" -gt 0 ]; do
       MAGIC_NUMBER=${DEAD_MAGIC_NUMBER}
       ;;
     -P|--public-endpoint)
-      if [ -n $2 ]; then
+      if [[ -n $2 ]]; then
         PUBLIC_ENDPOINT=$2
         shift
       else
@@ -72,7 +72,7 @@ while [ "$#" -gt 0 ]; do
       fi
       ;;
     -B|--base-dir)
-      if [ -n $2 ]; then
+      if [[ -n $2 ]]; then
         BASE_DIR=$2
       else
         echo "Error: --base-dir requires a directory >&2"
@@ -80,7 +80,7 @@ while [ "$#" -gt 0 ]; do
       fi
       ;;
     -G|--git-spinnaker)
-      if [ -n $2 ]; then
+      if [[ -n $2 ]]; then
         SPIN_GIT_REPO=$2
       else
         echo "Error: --git-spinnaker requires a directory >&2"
@@ -99,7 +99,8 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-. ${PROJECT_DIR}/scripts/functions.sh
+# shellcheck disable=SC1090,SC1091
+. "${PROJECT_DIR}/scripts/functions.sh"
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   echo "Using OSS Spinnaker"
@@ -113,25 +114,25 @@ fi
 
 echo "Running minnaker setup for Linux"
 echo "Will use the following spinnaker-kustomize-patch repo: ${SPIN_GIT_REPO}"
-  
+
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
-sudo mkdir -p ${BASE_DIR}/.kube
-sudo mkdir -p ${BASE_DIR}/.hal/.secret
-sudo chown -R 1000 ${BASE_DIR}
+sudo mkdir -p "${BASE_DIR}/.kube"
+sudo mkdir -p "${BASE_DIR}/.hal/.secret"
+sudo chown -R 1000 "${BASE_DIR}"
 
 detect_endpoint
 generate_passwords
 
 ### Fix up operator manifests
-SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 # uncomment when functions.sh generates minio password
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat ${BASE_DIR}/.hal/public_endpoint).nip.io}"   # use nip.io which is a DNS that will always resolve.
+PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
 # Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone ${SPIN_GIT_REPO} ${BASE_DIR}/operator
-cd ${BASE_DIR}/operator
+git clone "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
+cd "${BASE_DIR}/operator"
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
@@ -157,19 +158,21 @@ echo "Installing yq"
 install_yq
 
 ### Deploy Spinnaker with Operator
-cd ${BASE_DIR}/operator
+cd "${BASE_DIR}/operator"
 
 set -x
 SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
 set +x
 
-ln -s ${BASE_DIR} ${HOME}/spinnaker
-ln -s ${BASE_DIR}/operator ${HOME}/install
+ln -s "${BASE_DIR}" "${HOME}/spinnaker"
+ln -s "${BASE_DIR}/operator" "${HOME}/install"
 
-echo '' >>~/.bashrc
-echo 'source <(kubectl completion bash)' >>~/.bashrc          
+echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
+echo 'source <(kubectl completion bash)' >>~/.bashrc
 
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
 echo "http://${PUBLIC_ENDPOINT}"
 echo "username: 'admin'"
-echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
+echo "password: '${SPINNAKER_PASSWORD}'"
+
+
