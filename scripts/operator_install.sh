@@ -67,7 +67,7 @@ while [ "$#" -gt 0 ]; do
         PUBLIC_ENDPOINT=$2
         shift
       else
-        echo "Error: --public-endpoint requires an IP address >&2"
+        echo "ERROR: --public-endpoint requires an IP address >&2"
         exit 1
       fi
       ;;
@@ -75,7 +75,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         BASE_DIR=$2
       else
-        echo "Error: --base-dir requires a directory >&2"
+        echo "ERROR: --base-dir requires a directory >&2"
         exit 1
       fi
       ;;
@@ -83,7 +83,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         SPIN_GIT_REPO=$2
       else
-        echo "Error: --git-spinnaker requires a directory >&2"
+        echo "ERROR: --git-spinnaker requires a directory >&2"
         exit 1
       fi
       ;;
@@ -101,6 +101,19 @@ done
 
 # shellcheck disable=SC1090,SC1091
 . "${PROJECT_DIR}/scripts/functions.sh"
+
+# install prereqs jq
+# if jq is not installed
+if ! jq --help > /dev/null 2>&1; then
+  # only try installing if a Debian system
+  if apt-get -v > /dev/null 2>&1; then 
+    echo "Using apt-get to install jq"
+    sudo apt-get install -y jq
+  else
+    echo "ERROR: Unsupported OS! Cannot automatically install jq. Please try install jq first before rerunning this script"
+    exit 2
+  fi
+fi
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   echo "Using OSS Spinnaker"
