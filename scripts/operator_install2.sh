@@ -118,13 +118,12 @@ SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 ENDPOINT="spinnaker.$(cat ${BASE_DIR}/.hal/public_endpoint).nip.io"         # use nip.io which is a DNS that will always resolve. 
 
-# Clone spinnaker-kustomize-patches
+# Clone armory/spinnaker-kustomize-patches and fix up manifests
 git clone https://github.com/armory/spinnaker-kustomize-patches.git ${BASE_DIR}/operator
 cd ${BASE_DIR}/operator
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
-set -x
 sed -i "s|spinnaker.mycompany.com|${ENDPOINT}|g" expose/ingress-traefik.yml
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
 # uncomment when functions.sh generates minio password
@@ -137,7 +136,6 @@ if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
   echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
 fi
-set +x
 
 ### Set up Kubernetes environment
 echo "Installing K3s"
@@ -149,14 +147,16 @@ install_yq
 
 ### Deploy Spinnaker with Operator
 cd ${BASE_DIR}/operator
-./deploy.sh
+set -x
+SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
+
+echo $HOME
 
 ln -s ${BASE_DIR} ${HOME}/spinnaker
 ln -s ${BASE_DIR}/operator ${HOME}/install
-
+set +x
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 
-set +x
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
 echo "https://$(cat ${BASE_DIR}/.hal/public_endpoint)"
 echo "username: 'admin'"
