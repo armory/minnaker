@@ -112,6 +112,7 @@ else
 fi
 
 echo "Running minnaker setup for Linux"
+echo "Will use the following spinnaker-kustomize-patch repo: ${SPIN_GIT_REPO}"
   
 # Scaffold out directories
 # OSS Halyard uses 1000; we're using 1000 for everything
