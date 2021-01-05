@@ -36,6 +36,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Changelog
 
+* 1/5/2021, Script for operator install added (see operator_install.sh)
 * As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
 * As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
 * If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](https://github.com/armory/minnaker/wiki/I.-Guides:-Switching-from-old-Minnaker-(port-based-routing)-to-Minnaker-using-path-based-routing).
@@ -71,6 +72,12 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
     ```bash
     ./scripts/install.sh
+    ```
+    
+    optionally - to use the Spinnaker Operator (note: the other instructions listed hereafter do not apply to the operator)
+    
+    ```bash
+    ./scripts/operator_install.sh
     ```
 
     If you would like to install Open Source Spinnaker, use the `-o` flag.
