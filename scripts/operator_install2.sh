@@ -108,6 +108,10 @@ echo "Running minnaker setup for Linux"
 sudo mkdir -p ${BASE_DIR}/.kube
 sudo mkdir -p ${BASE_DIR}/.hal/.secret
 
+id
+pwd
+set -x
+
 detect_endpoint
 generate_passwords
 
@@ -135,6 +139,7 @@ if [[ ${OPEN_SOURCE} -eq 0 ]]; then
 fi
 
 sudo chown -R 1000 ${BASE_DIR}
+set +x
 
 ### Set up Kubernetes environment
 echo "Installing K3s"
