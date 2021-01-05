@@ -151,9 +151,8 @@ install_yq
 cd ${BASE_DIR}/operator
 ./deploy.sh
 
-cd
-ln -s ${BASE_DIR} spinnaker
-ln -s ${BASE_DIR}/operator install
+ln -s ${BASE_DIR} ${HOME}/spinnaker
+ln -s ${BASE_DIR}/operator ${HOME}/install
 
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 

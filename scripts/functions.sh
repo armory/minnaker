@@ -18,9 +18,7 @@
 ARMORY_HALYARD_IMAGE="armory/halyard-armory:1.9.4"
 
 install_k3s () {
-  #curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/.hal/public_endpoint)" INSTALL_K3S_VERSION="v1.17.4+k3s1" K3S_KUBECONFIG_MODE=644 sh -
-  # use latest stable release
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/.hal/public_endpoint)" INSTALL_K3S_CHANNEL="stable" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/.hal/public_endpoint)" INSTALL_K3S_VERSION="v1.19.5+k3s2" K3S_KUBECONFIG_MODE=644 sh -
 }
 
 install_yq () {
