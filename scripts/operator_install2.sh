@@ -114,6 +114,7 @@ generate_passwords
 
 ### Fix up operator manifests
 SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
+# uncomment when functions.sh generates minio password
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
 
@@ -126,9 +127,10 @@ ln -s recipes/kustomization-minnaker.yml kustomization.yml
 set -x
 sed -i "s|spinnaker.mycompany.com|${ENDPOINT}|g" expose/ingress-traefik.yml
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
+# uncomment when functions.sh generates minio password
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
 sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
-sed -ir "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
+sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
 echo "  - core_config/patch-version.yml" >> kustomization.yml
 
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
