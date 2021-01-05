@@ -123,6 +123,7 @@ cd ${BASE_DIR}/operator
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
+set -x
 sed -i "s|spinnaker.mycompany.com|${ENDPOINT}|g" expose/ingress-traefik.yml
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
@@ -131,9 +132,10 @@ sed -ir "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.ym
 echo "  - core_config/patch-version.yml" >> kustomization.yml
 
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
-  sed -e "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
+  sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
   echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
 fi
+set +x
 
 ### Set up Kubernetes environment
 echo "Installing K3s"
