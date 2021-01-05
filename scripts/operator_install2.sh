@@ -27,6 +27,7 @@ print_help () {
   echo "               [-o|--oss]                                         : Install Open Source Spinnaker (instead of Armory Spinnaker)"
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
+  echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
   set -x
 }
@@ -41,6 +42,7 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
+SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -74,6 +76,14 @@ while [ "$#" -gt 0 ]; do
         BASE_DIR=$2
       else
         echo "Error: --base-dir requires a directory >&2"
+        exit 1
+      fi
+      ;;
+    -G|--git-spinnaker)
+      if [ -n $2 ]; then
+        SPIN_GIT_REPO=$2
+      else
+        echo "Error: --git-spinnaker requires a directory >&2"
         exit 1
       fi
       ;;
@@ -119,7 +129,7 @@ SPINNAKER_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)
 PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat ${BASE_DIR}/.hal/public_endpoint).nip.io}"   # use nip.io which is a DNS that will always resolve.
 
 # Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone https://github.com/armory/spinnaker-kustomize-patches.git ${BASE_DIR}/operator
+git clone ${SPIN_GIT_REPO} ${BASE_DIR}/operator
 cd ${BASE_DIR}/operator
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
