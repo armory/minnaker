@@ -108,7 +108,7 @@ if ! jq --help > /dev/null 2>&1; then
   # only try installing if a Debian system
   if apt-get -v > /dev/null 2>&1; then 
     echo "Using apt-get to install jq"
-    sudo apt-get install -y jq
+    sudo apt-get update && sudo apt-get install -y jq
   else
     echo "ERROR: Unsupported OS! Cannot automatically install jq. Please try install jq first before rerunning this script"
     exit 2
