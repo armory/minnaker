@@ -42,7 +42,7 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
-BASE_DIR=/etc/spinnaker
+BASE_DIR=/home/ubuntu/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
@@ -144,7 +144,7 @@ SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
 # Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
+git clone -b minnaker "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
 cd "${BASE_DIR}/operator"
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
