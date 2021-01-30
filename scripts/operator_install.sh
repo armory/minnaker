@@ -28,6 +28,7 @@ print_help () {
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
+  echo "               [--branch]                                         : Branch to clone (default 'minnaker')"
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
   set -x
 }
@@ -44,6 +45,7 @@ KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
 BASE_DIR=/home/ubuntu/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
+BRANCH=minnaker
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -82,9 +84,18 @@ while [ "$#" -gt 0 ]; do
     -G|--git-spinnaker)
       if [[ -n $2 ]]; then
         SPIN_GIT_REPO=$2
+        BRANCH=master
       else
-        echo "ERROR: --git-spinnaker requires a directory >&2"
+        echo "ERROR: --git-spinnaker requires a git url >&2"
         exit 1
+      fi
+      ;;
+    --branch)
+      if [[ -n $2 ]]; then
+        BRANCH=$2
+      else
+        echo "INFO: Defaulting to branch 'minnaker' for $SPIN_GIT_REPO"
+        BRANCH=minnaker
       fi
       ;;
     -n|--nowait)
@@ -144,7 +155,7 @@ SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
 # Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone -b minnaker "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
+git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
 cd "${BASE_DIR}/operator"
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
