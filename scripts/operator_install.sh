@@ -152,7 +152,7 @@ generate_passwords
 SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 # uncomment when functions.sh generates minio password
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-#PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
+PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
 # Clone armory/spinnaker-kustomize-patches branch:minnaker and pre-fill manifests
 rm -rf ${BASE_DIR}/spinsvc
