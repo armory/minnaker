@@ -152,11 +152,12 @@ generate_passwords
 SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 # uncomment when functions.sh generates minio password
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
+#PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
-# Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
-cd "${BASE_DIR}/operator"
+# Clone armory/spinnaker-kustomize-patches branch:minnaker and pre-fill manifests
+rm -rf ${BASE_DIR}/spinsvc
+git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/spinsvc"
+cd "${BASE_DIR}/spinsvc"
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
@@ -166,11 +167,13 @@ sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secr
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
 sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
 sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
-echo "  - core_config/patch-version.yml" >> kustomization.yml
 
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
+  echo " # added by minnaker install script" >> kustomization.yml
+  echo "  - armory/patch-terraformer.yml" >> kustomization.yml
   echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
+  echo "  - armory/patch-policyengine.yml" >> kustomization.yml
 fi
 
 ### Set up Kubernetes environment
@@ -182,17 +185,19 @@ echo "Installing yq"
 install_yq
 
 ### Deploy Spinnaker with Operator
-cd "${BASE_DIR}/operator"
+cd "${BASE_DIR}/spinsvc"
 
 set -x
 SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
 set +x
 
-ln -s "${BASE_DIR}" "${HOME}/spinnaker"
-ln -s "${BASE_DIR}/operator" "${HOME}/install"
+#ln -s "${BASE_DIR}" "${HOME}/spinnaker"
+#ln -s "${BASE_DIR}/operator" "${HOME}/install"
 
 echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
 echo 'source <(kubectl completion bash)' >>~/.bashrc
+echo 'alias k=kubectl' >>~/.bashrc
+echo 'complete -F __start_kubectl k' >>~/.bashrc
 
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
 echo "http://${PUBLIC_ENDPOINT}"
