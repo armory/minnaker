@@ -28,6 +28,7 @@ print_help () {
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
+  echo "               [--branch]                                         : Branch to clone (default 'minnaker')"
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
   set -x
 }
@@ -42,8 +43,9 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
-BASE_DIR=/etc/spinnaker
+BASE_DIR=/home/ubuntu/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
+BRANCH=minnaker
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -82,9 +84,18 @@ while [ "$#" -gt 0 ]; do
     -G|--git-spinnaker)
       if [[ -n $2 ]]; then
         SPIN_GIT_REPO=$2
+        BRANCH=master
       else
-        echo "ERROR: --git-spinnaker requires a directory >&2"
+        echo "ERROR: --git-spinnaker requires a git url >&2"
         exit 1
+      fi
+      ;;
+    --branch)
+      if [[ -n $2 ]]; then
+        BRANCH=$2
+      else
+        echo "INFO: Defaulting to branch 'minnaker' for $SPIN_GIT_REPO"
+        BRANCH=minnaker
       fi
       ;;
     -n|--nowait)
@@ -143,23 +154,28 @@ SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
-# Clone armory/spinnaker-kustomize-patches and fix up manifests
-git clone "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
-cd "${BASE_DIR}/operator"
+# Clone armory/spinnaker-kustomize-patches branch:minnaker and pre-fill manifests
+rm -rf ${BASE_DIR}/spinsvc
+git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/spinsvc"
+cd "${BASE_DIR}/spinsvc"
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
 sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/ingress-traefik.yml
+sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/patch-urls.yml
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
 # uncomment when functions.sh generates minio password
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
 sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
 sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
-echo "  - core_config/patch-version.yml" >> kustomization.yml
+sed -i "s|token|# token|g" accounts/git/patch-github.yml
+sed -i "s|username|# username|g" accounts/git/patch-gitrepo.yml
+sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
 
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
-  echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
+else
+  sed -i "s|- armory|#- armory|g" recipes/kustomization-minnaker.yml
 fi
 
 ### Set up Kubernetes environment
@@ -171,17 +187,19 @@ echo "Installing yq"
 install_yq
 
 ### Deploy Spinnaker with Operator
-cd "${BASE_DIR}/operator"
+cd "${BASE_DIR}/spinsvc"
 
 set -x
 SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
 set +x
 
-ln -s "${BASE_DIR}" "${HOME}/spinnaker"
-ln -s "${BASE_DIR}/operator" "${HOME}/install"
+#ln -s "${BASE_DIR}" "${HOME}/spinnaker"
+#ln -s "${BASE_DIR}/operator" "${HOME}/install"
 
 echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
 echo 'source <(kubectl completion bash)' >>~/.bashrc
+echo 'alias k=kubectl' >>~/.bashrc
+echo 'complete -F __start_kubectl k' >>~/.bashrc
 
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
 echo "http://${PUBLIC_ENDPOINT}"
