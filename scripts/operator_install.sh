@@ -98,18 +98,6 @@ while [ "$#" -gt 0 ]; do
         BRANCH=minnaker
       fi
       ;;
-        echo "ERROR: --base-dir requires a directory >&2"
-        exit 1
-      fi
-      ;;
-    -G|--git-spinnaker)
-      if [[ -n $2 ]]; then
-        SPIN_GIT_REPO=$2
-      else
-        echo "ERROR: --git-spinnaker requires a directory >&2"
-        exit 1
-      fi
-      ;;
     -n|--nowait)
       echo "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
