@@ -28,10 +28,7 @@ print_help () {
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
-<<<<<<< HEAD
   echo "               [--branch]                                         : Branch to clone (default 'minnaker')"
-=======
->>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
   set -x
 }
@@ -46,14 +43,9 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
-<<<<<<< HEAD
 BASE_DIR=/home/ubuntu/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 BRANCH=minnaker
-=======
-BASE_DIR=/etc/spinnaker
-SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
->>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -78,10 +70,14 @@ while [ "$#" -gt 0 ]; do
         shift
       else
 <<<<<<< HEAD
+<<<<<<< HEAD
         echo "ERROR: --public-endpoint requires an IP address >&2"
 =======
         echo "Error: --public-endpoint requires an IP address >&2"
 >>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
+=======
+        echo "ERROR: --public-endpoint requires an IP address >&2"
+>>>>>>> Add installation of jq
         exit 1
       fi
       ;;
@@ -89,6 +85,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         BASE_DIR=$2
       else
+<<<<<<< HEAD
 <<<<<<< HEAD
         echo "ERROR: --base-dir requires a directory >&2"
         exit 1
@@ -113,6 +110,9 @@ while [ "$#" -gt 0 ]; do
       ;;
 =======
         echo "Error: --base-dir requires a directory >&2"
+=======
+        echo "ERROR: --base-dir requires a directory >&2"
+>>>>>>> Add installation of jq
         exit 1
       fi
       ;;
@@ -120,7 +120,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         SPIN_GIT_REPO=$2
       else
-        echo "Error: --git-spinnaker requires a directory >&2"
+        echo "ERROR: --git-spinnaker requires a directory >&2"
         exit 1
       fi
       ;;
@@ -139,6 +139,19 @@ done
 
 # shellcheck disable=SC1090,SC1091
 . "${PROJECT_DIR}/scripts/functions.sh"
+
+# install prereqs jq
+# if jq is not installed
+if ! jq --help > /dev/null 2>&1; then
+  # only try installing if a Debian system
+  if apt-get -v > /dev/null 2>&1; then 
+    echo "Using apt-get to install jq"
+    sudo apt-get install -y jq
+  else
+    echo "ERROR: Unsupported OS! Cannot automatically install jq. Please try install jq first before rerunning this script"
+    exit 2
+  fi
+fi
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   echo "Using OSS Spinnaker"
