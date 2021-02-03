@@ -28,7 +28,10 @@ print_help () {
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
   echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
+<<<<<<< HEAD
   echo "               [--branch]                                         : Branch to clone (default 'minnaker')"
+=======
+>>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
   set -x
 }
@@ -43,9 +46,14 @@ MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
+<<<<<<< HEAD
 BASE_DIR=/home/ubuntu/spinnaker
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 BRANCH=minnaker
+=======
+BASE_DIR=/etc/spinnaker
+SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
+>>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -69,7 +77,11 @@ while [ "$#" -gt 0 ]; do
         PUBLIC_ENDPOINT=$2
         shift
       else
+<<<<<<< HEAD
         echo "ERROR: --public-endpoint requires an IP address >&2"
+=======
+        echo "Error: --public-endpoint requires an IP address >&2"
+>>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
         exit 1
       fi
       ;;
@@ -77,6 +89,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         BASE_DIR=$2
       else
+<<<<<<< HEAD
         echo "ERROR: --base-dir requires a directory >&2"
         exit 1
       fi
@@ -98,6 +111,20 @@ while [ "$#" -gt 0 ]; do
         BRANCH=minnaker
       fi
       ;;
+=======
+        echo "Error: --base-dir requires a directory >&2"
+        exit 1
+      fi
+      ;;
+    -G|--git-spinnaker)
+      if [[ -n $2 ]]; then
+        SPIN_GIT_REPO=$2
+      else
+        echo "Error: --git-spinnaker requires a directory >&2"
+        exit 1
+      fi
+      ;;
+>>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
     -n|--nowait)
       echo "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
@@ -112,19 +139,6 @@ done
 
 # shellcheck disable=SC1090,SC1091
 . "${PROJECT_DIR}/scripts/functions.sh"
-
-# install prereqs jq
-# if jq is not installed
-if ! jq --help > /dev/null 2>&1; then
-  # only try installing if a Debian system
-  if apt-get -v > /dev/null 2>&1; then 
-    echo "Using apt-get to install jq"
-    sudo apt-get update && sudo apt-get install -y jq
-  else
-    echo "ERROR: Unsupported OS! Cannot automatically install jq. Please try install jq first before rerunning this script"
-    exit 2
-  fi
-fi
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   echo "Using OSS Spinnaker"
@@ -158,6 +172,7 @@ PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_end
 rm -rf ${BASE_DIR}/spinsvc
 git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/spinsvc"
 cd "${BASE_DIR}/spinsvc"
+
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
@@ -175,6 +190,7 @@ sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
 else
+  # remove armory related patches
   sed -i "s|- armory|#- armory|g" recipes/kustomization-minnaker.yml
 fi
 
