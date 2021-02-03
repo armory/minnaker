@@ -71,6 +71,7 @@ while [ "$#" -gt 0 ]; do
       else
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         echo "ERROR: --public-endpoint requires an IP address >&2"
 =======
         echo "Error: --public-endpoint requires an IP address >&2"
@@ -78,6 +79,9 @@ while [ "$#" -gt 0 ]; do
 =======
         echo "ERROR: --public-endpoint requires an IP address >&2"
 >>>>>>> Add installation of jq
+=======
+        echo "ERROR: --public-endpoint requires an IP address >&2"
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
         exit 1
       fi
       ;;
@@ -85,6 +89,7 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         BASE_DIR=$2
       else
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         echo "ERROR: --base-dir requires a directory >&2"
@@ -113,6 +118,9 @@ while [ "$#" -gt 0 ]; do
 =======
         echo "ERROR: --base-dir requires a directory >&2"
 >>>>>>> Add installation of jq
+=======
+        echo "ERROR: --base-dir requires a directory >&2"
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
         exit 1
       fi
       ;;
@@ -124,7 +132,10 @@ while [ "$#" -gt 0 ]; do
         exit 1
       fi
       ;;
+<<<<<<< HEAD
 >>>>>>> feat(operator-v2): Use spinnaker-kustomize-patches for operator installs
+=======
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
     -n|--nowait)
       echo "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
@@ -181,21 +192,31 @@ SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
 #MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
 PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
 
+<<<<<<< HEAD
 # Clone armory/spinnaker-kustomize-patches branch:minnaker and pre-fill manifests
 rm -rf ${BASE_DIR}/spinsvc
 git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/spinsvc"
 cd "${BASE_DIR}/spinsvc"
 
+=======
+# Clone armory/spinnaker-kustomize-patches and fix up manifests
+git clone "${SPIN_GIT_REPO}" "${BASE_DIR}/operator"
+cd "${BASE_DIR}/operator"
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
 rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
 sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/ingress-traefik.yml
+<<<<<<< HEAD
 sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/patch-urls.yml
+=======
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
 # uncomment when functions.sh generates minio password
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
 sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
 sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
+<<<<<<< HEAD
 sed -i "s|token|# token|g" accounts/git/patch-github.yml
 sed -i "s|username|# username|g" accounts/git/patch-gitrepo.yml
 sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
@@ -205,6 +226,13 @@ if [[ ${OPEN_SOURCE} -eq 0 ]]; then
 else
   # remove armory related patches
   sed -i "s|- armory|#- armory|g" recipes/kustomization-minnaker.yml
+=======
+echo "  - core_config/patch-version.yml" >> kustomization.yml
+
+if [[ ${OPEN_SOURCE} -eq 0 ]]; then
+  sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
+  echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
 fi
 
 ### Set up Kubernetes environment
@@ -216,12 +244,17 @@ echo "Installing yq"
 install_yq
 
 ### Deploy Spinnaker with Operator
+<<<<<<< HEAD
 cd "${BASE_DIR}/spinsvc"
+=======
+cd "${BASE_DIR}/operator"
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
 
 set -x
 SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
 set +x
 
+<<<<<<< HEAD
 #ln -s "${BASE_DIR}" "${HOME}/spinnaker"
 #ln -s "${BASE_DIR}/operator" "${HOME}/install"
 
@@ -229,6 +262,13 @@ echo '' >>~/.bashrc                                     # need to add empty line
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 echo 'alias k=kubectl' >>~/.bashrc
 echo 'complete -F __start_kubectl k' >>~/.bashrc
+=======
+ln -s "${BASE_DIR}" "${HOME}/spinnaker"
+ln -s "${BASE_DIR}/operator" "${HOME}/install"
+
+echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
+echo 'source <(kubectl completion bash)' >>~/.bashrc
+>>>>>>> b3c602b760ba3bd3cac0ef15a4ad4513a3f4bb02
 
 echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
 echo "http://${PUBLIC_ENDPOINT}"
