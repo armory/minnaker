@@ -162,18 +162,20 @@ rm kustomization.yml
 ln -s recipes/kustomization-minnaker.yml kustomization.yml
 
 sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/ingress-traefik.yml
+sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/patch-urls.yml
 sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
 # uncomment when functions.sh generates minio password
 #sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
 sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
 sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
+sed -i "s|token|# token|g" accounts/git/patch-github.yml
+sed -i "s|username|# username|g" accounts/git/patch-gitrepo.yml
+sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
 
 if [[ ${OPEN_SOURCE} -eq 0 ]]; then
   sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
-  echo " # added by minnaker install script" >> kustomization.yml
-  echo "  - armory/patch-terraformer.yml" >> kustomization.yml
-  echo "  - armory/patch-diagnostics.yml" >> kustomization.yml
-  echo "  - armory/patch-policyengine.yml" >> kustomization.yml
+else
+  sed -i "s|- armory|#- armory|g" recipes/kustomization-minnaker.yml
 fi
 
 ### Set up Kubernetes environment
