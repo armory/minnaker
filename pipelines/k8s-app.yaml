@@ -1,0 +1,12 @@
+#useful kubernetes commands for viewing Spinnaker applications
+#kubectl get app myapplicationname
+#kubectl describe app myapplicationname
+#kubectl edit app myappolicationname
+#file: application.yaml
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Application
+metadata:
+  name: my-first-k8s-app
+spec:
+  email: test@armory.io
+  description: Description
