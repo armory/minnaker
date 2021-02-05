@@ -192,11 +192,14 @@ install_yq
 cd "${BASE_DIR}/spinsvc"
 
 set -x
-SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=${SPIN_WATCH} ./deploy.sh
+SPIN_FLAVOR=${SPIN_FLAVOR} ./deploy.sh
 set +x
 
 #ln -s "${BASE_DIR}" "${HOME}/spinnaker"
 #ln -s "${BASE_DIR}/operator" "${HOME}/install"
+
+# Install PACRD
+kubectl apply -f https://engineering.armory.io/manifests/pacrd-1.0.1.yaml -n spinnaker
 
 echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
 echo 'source <(kubectl completion bash)' >>~/.bashrc
@@ -207,4 +210,6 @@ echo "It may take up to 10 minutes for this endpoint to work.  You can check by 
 echo "https://${PUBLIC_ENDPOINT}"
 echo "username: 'admin'"
 echo "password: '${SPINNAKER_PASSWORD}'"
+
+watch kubectl get pods,spinsvc -n spinnaker
 
