@@ -87,7 +87,7 @@ done
 
 if [[ ${OPEN_SOURCE} -eq 1 ]]; then
   printf "Using OSS Spinnaker"
-  HALYARD_IMAGE="gcr.io/spinnaker-marketplace/halyard:stable"
+  HALYARD_IMAGE="us-docker.pkg.dev/spinnaker-community/docker/halyard:stable"
 else
   printf "Using Armory Spinnaker"
   # This is defined in functions.sh
