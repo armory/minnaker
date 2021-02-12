@@ -1,8 +1,6 @@
 # Spinnaker All-In-One (Minnaker) Quick Start
 
-**Previously known as Mini-Spinnaker**
-
-Minnaker is currently intended for POCs and trying out Spinnaker.
+Minnaker is a simple way to install Spinnaker inside a VM.
 
 ## Background
 
@@ -10,10 +8,15 @@ Minnaker performs the following actions when run on a single Linux instance:
 
 * Installs [k3s](https://k3s.io/) with Traefik turned off.
 * Installs minio in k3s with a local volume.
-* Sets up **Halyard** in a Docker container (running in Kubernetes).
-* Installs **Spinnaker** using Halyard.
+* Installs mysql in k3s.
+* Installs redis in k3s.
+* Installs **[Spinnaker Operator](https://github.com/armory/spinnaker-operator)**.
+* Clones the "minnaker" branch in https://github.com/armory/spinnaker-kustomize-patches for the purposes of configuring Spinnaker.
+* Installs and configures **[Spinnaker](https://github.com/spinnaker)** or **[Armory](https://armory.io)** using the **Spinnaker Operator**.
+* Exposes Spinnaker using an Ingress and a [nip.io](https://nip.io/) dns address. (Read: Your IP address turned into a DNS address)  NOTE: If you're using an AWS EC2 instance, make sure you add port 443 to the security group.
 * Minnaker uses local authentication. The username is `admin` and the password is randomly generated when you install Minnaker. Find more details about getting the password in [Accessing Spinnaker](#accessing-spinnaker).
 * [Optionally] Configures development environment.
+* For the full list of customizations and configurations - please check out the [kustomization-minnaker.yml] (https://github.com/armory/spinnaker-kustomize-patches/blob/minnaker/recipes/kustomization-minnaker.yml) file.
 
 ## Requirements
 
@@ -36,11 +39,10 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Changelog
 
-* 1/5/2021, Script for operator install added (see operator_install.sh)
-* As of 1/14/2020, Minnaker only uses a kubernetes service account for its local deployment, and supports installation on Docker for Desktop.  It no longer needs a private IP link, only the public endpoint (only need -P, not -p).
-* As of 11/11/2019, Minnaker uses port 443 (instead of 80) and Traefik's default self-signed certificate.
-* If you installed Minnaker prior to November 2019, you can switch to the new path mechanism using [Switch to Paths](https://github.com/armory/minnaker/wiki/I.-Guides:-Switching-from-old-Minnaker-(port-based-routing)-to-Minnaker-using-path-based-routing).
-* As of 10/18/2019, Minnaker no longer uses port 8084.
+* 2/XX/2021, Starting to deprecate the usage of Halyard in the installation scripts in favor of the operator. If you would still like to use Halyard - please reference [Release 0.0.22](https://github.com/armory/minnaker/releases/tag/0.0.22)
+  * operator_install.sh replaces install.sh
+  * removing operator_install.sh
+  * ToDo: Clean up all other scripts to remove dependency on halyard. 
 
 ---
 
@@ -74,12 +76,6 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     ./scripts/install.sh
     ```
     
-    optionally - to use the Spinnaker Operator (note: the other instructions listed hereafter do not apply to the operator)
-    
-    ```bash
-    ./scripts/operator_install.sh
-    ```
-
     If you would like to install Open Source Spinnaker, use the `-o` flag.
 
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
@@ -91,15 +87,15 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
     Installation can take between 5-10 minutes to complete depending on VM size.
 
-6. Once Minnaker is up and running, you can make changes to its configuration using `hal`.  For example, to change the version of Spinnaker that is installed, you can use this:
+6. Once Minnaker is up and running, you can make changes to its configuration using `kustomize` and the `spinnaker-operator`.  For example, to change the version of Spinnaker that is installed, you can do this:
 
-    ```bash
-    hal config version edit --version 2.17.4
-
-    hal deploy apply
-    ```
-
-    *By default, Minnaker will install the latest GA version of Spinnaker available.*
+  * Using your favorite editor, edit the file: `~/spinnaker/spinsvc/core_config/patch-version.yml`
+  * Update line 8 to the version you desire. e.g. `version: 2.24.0`
+  * Then either run `~/spinnaker/spinsvc/deploy.sh` or `kubectl apply -k ~/spinnaker/spinsvc`
+  * To find the latest versions available:
+      * [Spinnaker](https://spinnaker.io/community/releases/versions/#latest-stable)
+      * [Armory](https://docs.armory.io/docs/release-notes/rn-armory-spinnaker/)
+  * *By default, Minnaker will install the latest GA version of Spinnaker or Armory available.*
 
 ## Accessing Spinnaker
 
@@ -152,20 +148,15 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 4. When finished, use the `exit` command to leave the pod.
 
-## Updating Halyard
-
-1. SSH into the machine where you have installed Spinnaker
-2. Change the Halyard version in `/etc/spinnaker/manifests/halyard.yml`
-3. `kubectl apply -f halyard.yml`
-
-Access the Halyard pod and run `hal --version` to verify that Halyard has been updated.
-
 ## Next Steps
 
 After you finish your installation of Minnaker, go through our [AWS QuickStart](https://docs.armory.io/spinnaker/Armory-Spinnaker-Quickstart-1/) to learn how to deploy applications to AWS with Spinnaker.
 
 Alternatively, take a look at the available Minnaker [guides](/guides/).
 
+To learn more about the Spinnaker Operator check out the docs here: https://docs.armory.io/docs/installation/operator/
+
+Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spinnaker-kustomize-patches#kustomize-patches-for-armory) repo
 
 ## Details
 

@@ -52,6 +52,15 @@ detect_endpoint () {
   fi
 }
 
+update_endpoint () {
+  PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
+
+  yq w -i ${BASE_DIR}/spinsvc/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
+  yq w -i ${BASE_DIR}/spinsvc/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl https://${ENDPOINT}
+  yq w -i ${BASE_DIR}/spinsvc/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.overrideBaseUrl  https://${ENDPOINT}/api
+  yq w -i ${BASE_DIR}/spinsvc/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.corsAccessPattern  https://${ENDPOINT}
+}
+
 generate_passwords () {
   # for PASSWORD_ITEM in spinnaker_password minio_password mysql_password; do
   for PASSWORD_ITEM in spinnaker_password; do
