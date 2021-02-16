@@ -1,0 +1,44 @@
+# file: deploy-nginx.yaml
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: pacrd-deploymanifest-integration-samples
+spec:
+  description: A sample showing how to define artifacts.
+  application: &app-name pacrd-pipeline-stages-samples
+  stages:
+    - type: deployManifest
+      properties:
+        name: Deploy text manifest
+        refId: "1"
+        requisiteStageRefIds: [ ]
+        account: spinnaker
+        cloudProvider: kubernetes
+        moniker:
+          app: *app-name
+        skipExpressionEvaluation: true
+        source: text
+        manifests:
+          - |
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-deployment
+              namespace: prod
+              labels:
+                app: nginx
+            spec:
+              replicas: 2
+              selector:
+                matchLabels:
+                  app: nginx
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:1.14.2
+                    ports:
+                    - containerPort: 80
