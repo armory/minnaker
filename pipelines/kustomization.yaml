@@ -1,7 +1,7 @@
 # file: kustomization.yaml
 resources:
-  - k8s-app.yaml
-  - k8s-deploy.yaml
+  - sample-app.yaml
+  - sample-pipe.yaml
 #patchesStrategicMerge:
 #  - patch.yaml
 #namespace: spinnaker  # Note: you should change this value if you are _not_ deploying into the `spinnaker` namespace.
