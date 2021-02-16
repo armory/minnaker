@@ -12,7 +12,7 @@ spec:
         name: Deploy text manifest
         refId: "1"
         requisiteStageRefIds: [ ]
-        account: spinnaker
+        account: spin-sa
         cloudProvider: kubernetes
         moniker:
           app: my-first-k8s-app
