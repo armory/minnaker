@@ -2,10 +2,10 @@
 apiVersion: pacrd.armory.spinnaker.io/v1alpha1
 kind: Pipeline
 metadata:
-  name: pacrd-deploymanifest-integration-samples
+  name: armory-sample-pipeline-kubernetes
 spec:
   description: A sample showing how to define artifacts.
-  application: &app-name pacrd-pipeline-stages-samples
+  application: &app-name armory-sample
   stages:
     - type: deployManifest
       properties:
