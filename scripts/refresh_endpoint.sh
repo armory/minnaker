@@ -32,12 +32,37 @@ print_help () {
   set +x
   echo "Usage: refresh_endpoint.sh"
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
+  echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
 
 apply_changes () {
-    ${BASE_DIR}/spinsvc/deploy.sh
+  cd "${BASE_DIR}/spinsvc"
+  ./deploy.sh
 }
+
+# k3s can be in an unknown state sometimes when the instance is stopped and restarted
+restart_k3s () {
+
+  kubectl get apiservice
+
+  while [[ $(kubectl get apiservice | grep False | wc -l) -ne 0 ]];
+  do
+    echo "Waiting for K3s to be up"
+    sleep 5;
+  done
+
+  kubectl get apiservice
+
+  sleep 10
+
+  kubectl delete pods --all -A --force --grace-period=0
+
+  sleep 10
+
+}
+
+####
 
 PUBLIC_ENDPOINT=""
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
@@ -77,23 +102,7 @@ export PATH
 
 detect_endpoint
 update_endpoint
-
-kubectl get apiservice
-
-while [[ $(kubectl get apiservice | grep False | wc -l) -ne 0 ]];
-do
-  echo "Waiting for K3s to be up"
-  sleep 5;
-done
-
-kubectl get apiservice
-
-sleep 10
-
-kubectl delete pods --all -A --force --grace-period=0
-
-sleep 10
-
+restart_k3s
 apply_changes
 
 echo "https://${PUBLIC_ENDPOINT}"

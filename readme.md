@@ -39,10 +39,11 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Changelog
 
-* 2/XX/2021, Starting to deprecate the usage of Halyard in the installation scripts in favor of the operator. If you would still like to use Halyard - please reference [Release 0.0.22](https://github.com/armory/minnaker/releases/tag/0.0.22)
+* 2/XX/2021 - Major update - install.sh has been replaced to use the spinnaker operator as the default installation method.  Todo: Many of the convience scripts will also need to be updated to use the operator as well.  If you would still like to use Halyard - please reference [Release 0.0.23](https://github.com/armory/minnaker/releases/tag/0.0.22)
   * operator_install.sh replaces install.sh
   * removing operator_install.sh
-  * ToDo: Clean up all other scripts to remove dependency on halyard. 
+  * ToDo: Clean up all other scripts to remove dependency on halyard.
+  * see notes below on currently supported scripts
 
 ---
 
@@ -76,18 +77,16 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     ./scripts/install.sh
     ```
     
-    If you would like to install Open Source Spinnaker, use the `-o` flag.
-
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
     ```bash
-    export PRIVATE_ENDPOINT=192.168.10.1
-    ./scripts/install.sh -o -P $PRIVATE_ENDPOINT
+    export PRIVATE_IP=192.168.10.1
+    ./scripts/install.sh -o -P $PRIVATE_IP
     ```
 
     Installation can take between 5-10 minutes to complete depending on VM size.
 
-6. Once Minnaker is up and running, you can make changes to its configuration using `kustomize` and the `spinnaker-operator`.  For example, to change the version of Spinnaker that is installed, you can do this:
+6. Once Minnaker is up and running, you can make changes to its configuration using `kustomize` and the `spinnaker-operator` under the folder `~/spinnaker/spinsvc`.  For example, to change the version of Spinnaker that is installed, you can do this:
 
   * Using your favorite editor, edit the file: `~/spinnaker/spinsvc/core_config/patch-version.yml`
   * Update line 8 to the version you desire. e.g. `version: 2.24.0`
@@ -99,54 +98,43 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Accessing Spinnaker
 
-1.  Determine the public endpoint for Spinnaker
+1.  A helper script called `spin_endpoint` was created during the installation process that prints out the URL associated with your spinnaker instance as well as the credentials (as necessary).
 
     ```bash
-    grep override /etc/spinnaker/.hal/config
+    spin_endpoint
     ```
 
-    Use the first URL.
-
-2. Get the Spinnaker password. On the Linux host, run the following command:
-
+    outputs: 
     ```bash
-    cat /etc/spinnaker/.hal/.secret/spinnaker_password
+    https://spinnaker.192.168.64.3.nip.io
+    username: 'admin'
+    password: 'xxxxx'
     ```
-
-3. In your browser, navigate to the IP_ADDR (https://IP/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
+    
+2. In your browser, navigate to the address (https://spinnaker.IP.nip.io/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
 
      If you installed Minnaker on a local VM, you must access it from your local machine. If you deployed Minnaker in the cloud, such as an EC2 instance, you can access Spinnaker from any machine that has access to that 'Public IP'.
 
-4. Log in to Deck with the following credentials:
+3. Log in to Deck with the following credentials:
 
     Username: `admin`
 
-    Password: <Password from step 2>   
+    Password: <Password from step 1>   
 
 ## Changing Your Spinnaker Configuration
 
 1. SSH into the machine where you have installed Spinnaker
-2. Access the Halyard pod:
+2. Modify the contents of `~/spinnaker/spinsvc/kustomization.yml` and the associated patch files. 
 
-    ```bash
-    export HAL_POD=$(kubectl -n spinnaker get pod -l app=halyard -oname | cut -d'/' -f 2)
+** PRO TIP: Use VS Code - Remote SSH extension to manage and edit multiple files **
 
-    kubectl -n spinnaker exec -it ${HAL_POD} bash
-    ```
+    See [Armory's Spinnaker Operator] (https://docs.armory.io/docs/installation/operator/).
+    
+    By default, the install script clones [Armory's Spinnaker Kustomize Patches repo (branch: minnaker)](https://github.com/armory/spinnaker-kustomize-patches/tree/minnaker). This branch has been pre-configured with many features to make learning Spinnaker easy. 
 
-3. Run Halyard configuration commands. For example, the following command allows you to configure and view the current deployment of Spinnaker’s version.
+    [Armory Operator Reference](https://docs.armory.io/docs/installation/operator-reference/)
 
-    ```bash
-    hal config version
-    ```
-
-	 All Halyard configuration files are stored in `/etc/spinnaker/.hal`
-
-    For more information about Armory's Halyard, see [Armory Halyard commands](https://docs.armory.io/spinnaker/armory_halyard/).
-
-    For more information about open source Halyard, see [Halyard commands](https://www.spinnaker.io/reference/halyard/commands/).    
-
-4. When finished, use the `exit` command to leave the pod.
+4. When finished save your changes, and run `deploy.sh` located under `~/spinnaker/spinsvc`.
 
 ## Next Steps
 
@@ -161,27 +149,18 @@ Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spi
 ## Details
 
 * If you shut down and restart the instance and it gets different IP addresses, you'll have to update Spinnaker with the new IP address(es):
-
-  * If the public IP address has changed:
-    * Update `/etc/spinnaker/.hal/public_endpoint` with the new public IP address
-    * Update `/etc/spinnaker/.hal/config` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
-    * `/etc/spinnaker/.hal/config-seed` Update with the new public IP addresses (Look for both `overrideBaseUrl` fields) (if you haven't switched to DNS)
-  * Run `hal deploy apply`
+  * Run `refresh_endpoint.sh` and this will try to detect your new IP address and update the spinnaker configuration to your new IP address.
 
 * Certificate support isn't yet documented.  There are several ways to achieve this:
   * Using actual cert files: create certs that Traefik can use in the ingress definition(s)
   * Using ACM or equivalent: put a certificate in front of the instance and change the overrides
   * Either way, you *must* use certificates that your browser will trust that match your DNS name (your browser may not prompt to trust the untrusted API certificate)
 
-* If you need to get the password again, you can see the generated password in `/etc/spinnaker/.hal/.secret/spinnaker_password`:
-
-  ```bash
-  cat /etc/spinnaker/.hal/.secret/spinnaker_password
-  ```
+* If you need to get the password again, you can execute the command `spin_endpoint` (this was added by the install script under `/usr/local/bin`)
 
 ## Troubleshooting
 
-Under the hood, Minnaker just wraps Halyard (or Operator, depending on which version you're using), so it still runs all the components of Spinnaker as Kubernetes pods in the `spinnaker` namespace.  You can use standard Kubernetes troubleshooting steps to troubleshoot Spinnaker components.
+Under the hood, Minnaker just wraps Spinnaker Operator, so it still runs all the components of Spinnaker as Kubernetes pods in the `spinnaker` namespace.  You can use standard Kubernetes troubleshooting steps to troubleshoot Spinnaker components.
 
 For example, to see all the components of Minnaker:
 
@@ -190,7 +169,6 @@ $ kubectl -n spinnaker get all -o wide
 NAME                                   READY   STATUS    RESTARTS   AGE     IP           NODE              NOMINATED NODE   READINESS GATES
 pod/minio-0                            1/1     Running   0          2d11h   10.42.0.11   ip-172-31-19-10   <none>           <none>
 pod/mariadb-0                          1/1     Running   0          2d11h   10.42.0.12   ip-172-31-19-10   <none>           <none>
-pod/halyard-0                          1/1     Running   0          2d11h   10.42.0.2    ip-172-31-19-10   <none>           <none>
 pod/spin-redis-57966d86df-qfn9m        1/1     Running   0          2d11h   10.42.0.16   ip-172-31-19-10   <none>           <none>
 pod/spin-deck-778577cb65-7m6mw         1/1     Running   0          2d11h   10.42.0.13   ip-172-31-19-10   <none>           <none>
 pod/spin-gate-75c99f6b9d-fcgth         1/1     Running   0          2d11h   10.42.0.14   ip-172-31-19-10   <none>           <none>
@@ -211,7 +189,6 @@ service/spin-orca          ClusterIP   10.43.27.1      <none>        8083/TCP   
 service/spin-clouddriver   ClusterIP   10.43.181.214   <none>        7002/TCP   2d11h   app=spin,cluster=spin-clouddriver
 service/spin-rosco         ClusterIP   10.43.187.43    <none>        8087/TCP   2d11h   app=spin,cluster=spin-rosco
 service/spin-front50       ClusterIP   10.43.121.22    <none>        8080/TCP   2d11h   app=spin,cluster=spin-front50
-service/hello-today        ClusterIP   10.43.234.173   <none>        80/TCP     33h     lb=hello-today
 
 NAME                               READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS    IMAGES                                                   SELECTOR
 deployment.apps/spin-redis         1/1     1            1           2d11h   redis         gcr.io/kubernetes-spinnaker/redis-cluster:v2             app=spin,cluster=spin-redis
@@ -236,7 +213,6 @@ replicaset.apps/spin-echo-5b5dc87b4c         1         1         1       2d11h  
 NAME                       READY   AGE     CONTAINERS   IMAGES
 statefulset.apps/minio     1/1     2d11h   minio        minio/minio
 statefulset.apps/mariadb   1/1     2d11h   mariadb      mariadb:10.4.12-bionic
-statefulset.apps/halyard   1/1     2d11h   halyard      armory/halyard-armory:1.8.1
 ```
 
 To list all of the pods:
@@ -246,7 +222,6 @@ $ kubectl -n spinnaker get pods
 NAME                               READY   STATUS    RESTARTS   AGE
 minio-0                            1/1     Running   0          2d11h
 mariadb-0                          1/1     Running   0          2d11h
-halyard-0                          1/1     Running   0          2d11h
 spin-redis-57966d86df-qfn9m        1/1     Running   0          2d11h
 spin-deck-778577cb65-7m6mw         1/1     Running   0          2d11h
 spin-gate-75c99f6b9d-fcgth         1/1     Running   0          2d11h
@@ -332,7 +307,14 @@ $ kubectl -n spinnaker logs -f spin-gate-75c99f6b9d-fcgth
 2020-02-21 01:06:25.813  INFO 1 --- [applications-10] c.n.s.g.s.internal.Front50Service        : <--- HTTP 200 http://spin-front50.spinnaker:8080/v2/applications?restricted=false (4ms)
 ```
 
+## Uninstalling K3s
+* This will kill your kubernetes cluster: `/usr/local/bin/k3s-killall.sh`
+
 ## Uninstall Minnaker for OSX
-* Delete the `spinnaker` namespace: `kubectl --context docker-desktop delete ns spinnaker`
+* Delete the `spinnaker` and `spinnaker-operator` namespace.  
+```bash
+kubectl --context docker-desktop delete ns spinnaker
+kubectl --context docker-desktop delete ns spinnaker-operator
+```
 * (Optionally) delete the `ingress-nginx` namespace: `kubectl --context docker-desktop delete ns ingress-nginx`
 * (Optionally) delete the local resources (including all pipeline defs): `rm -rf ~/minnaker`

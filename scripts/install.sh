@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# Copyright 2020 Armory, Inc.
+# Copyright 2021 Armory, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 # Install Minnaker in Ubuntu VM (will first install k3s)
 
-set -e
+#set -e
 
 ##### Functions
 print_help () {
@@ -39,45 +39,89 @@ PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd 
 
 OPEN_SOURCE=0
 PUBLIC_ENDPOINT=""
+PUBLIC_IP=""
 MAGIC_NUMBER=cafed00d
 DEAD_MAGIC_NUMBER=cafedead
 KUBERNETES_CONTEXT=default
 NAMESPACE=spinnaker
-BASE_DIR=/home/ubuntu/spinnaker
+BASE_DIR=$PROJECT_DIR/spinsvc
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 BRANCH=minnaker
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 
+OUT="$PROJECT_DIR/install.log"
+
+function log() {
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  ORANGE='\033[0;33m'
+  CYAN='\033[0;36m'
+  NC='\033[0m'
+  LEVEL=$1
+  MSG=$2
+  case $LEVEL in
+  "INFO") HEADER_COLOR=$GREEN MSG_COLOR=$NS ;;
+  "WARN") HEADER_COLOR=$ORANGE MSG_COLOR=$NS ;;
+  "KUBE") HEADER_COLOR=$ORANGE MSG_COLOR=$CYAN ;;
+  "ERROR") HEADER_COLOR=$RED MSG_COLOR=$NS ;;
+  esac
+  printf "${HEADER_COLOR}[%-5.5s]${NC} ${MSG_COLOR}%b${NC}" "${LEVEL}" "${MSG}"
+  printf "[%-5.5s] %b" "${LEVEL}" "${MSG}" >>"$OUT"
+}
+
+function info() {
+  log "INFO" "$1\n"
+}
+
+function warn() {
+  log "WARN" "$1\n"
+}
+
+function error() {
+  log "ERROR" "$1\n" && exit 1
+}
+
+function handle_generic_kubectl_error() {
+  error "Error executing command:\n$ERR_OUTPUT"
+}
+
+function exec_kubectl_mutating() {
+  log "KUBE" "$1\n"
+  ERR_OUTPUT=$({ $1 >>"$OUT"; } 2>&1)
+  EXIT_CODE=$?
+  [[ $EXIT_CODE != 0 ]] && $2
+}
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  echo "Use osx_install.sh to install on OSX Docker Desktop"
+  error "Use osx_install.sh to install on OSX Docker Desktop"
   exit 1
 fi
-
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o|--oss)
-      echo "Using OSS Spinnaker"
+      info "Using OSS Spinnaker"
       OPEN_SOURCE=1
       ;;
     -x)
-      echo "Excluding from Minnaker metrics"
+      info "Excluding from Minnaker metrics"
       MAGIC_NUMBER=${DEAD_MAGIC_NUMBER}
       ;;
     -P|--public-endpoint)
       if [[ -n $2 ]]; then
-        PUBLIC_ENDPOINT=$2
+        PUBLIC_IP=$2
         shift
       else
-        echo "ERROR: --public-endpoint requires an IP address >&2"
+        error "--public-endpoint requires an IP address >&2"
         exit 1
       fi
       ;;
     -B|--base-dir)
       if [[ -n $2 ]]; then
         BASE_DIR=$2
+        warn "Contents in $2 will be erased"
       else
-        echo "ERROR: --base-dir requires a directory >&2"
+        error "--base-dir requires a directory >&2"
         exit 1
       fi
       ;;
@@ -86,7 +130,7 @@ while [ "$#" -gt 0 ]; do
         SPIN_GIT_REPO=$2
         BRANCH=master
       else
-        echo "ERROR: --git-spinnaker requires a git url >&2"
+        error "--git-spinnaker requires a git url >&2"
         exit 1
       fi
       ;;
@@ -94,12 +138,12 @@ while [ "$#" -gt 0 ]; do
       if [[ -n $2 ]]; then
         BRANCH=$2
       else
-        echo "INFO: Defaulting to branch 'minnaker' for $SPIN_GIT_REPO"
+        info "Defaulting to branch 'minnaker' for $SPIN_GIT_REPO"
         BRANCH=minnaker
       fi
       ;;
     -n|--nowait)
-      echo "Will not wait for Spinnaker to come up"
+      info "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
       ;;
     -h|--help)
@@ -113,105 +157,65 @@ done
 # shellcheck disable=SC1090,SC1091
 . "${PROJECT_DIR}/scripts/functions.sh"
 
-# install prereqs jq
-# if jq is not installed
-if ! jq --help > /dev/null 2>&1; then
-  # only try installing if a Debian system
-  if apt-get -v > /dev/null 2>&1; then 
-    echo "Using apt-get to install jq"
-    sudo apt-get update && sudo apt-get install -y jq
-  else
-    echo "ERROR: Unsupported OS! Cannot automatically install jq. Please try install jq first before rerunning this script"
-    exit 2
-  fi
-fi
 
-if [[ ${OPEN_SOURCE} -eq 1 ]]; then
-  echo "Using OSS Spinnaker"
+if [[ ${OPEN_SOURCE} == 1 ]]; then
+  info "Using OSS Spinnaker"
   SPIN_FLAVOR=oss
   VERSION=$(curl -s https://spinnaker.io/community/releases/versions/ | grep 'id="version-' | head -1 | sed -e 's/\(<[^<][^<]*>\)//g; /^$/d' | cut -d' ' -f2)
 else
-  echo "Using Armory Spinnaker"
+  info "Using Armory Spinnaker"
   SPIN_FLAVOR=armory
   VERSION=$(curl -sL https://halconfig.s3-us-west-2.amazonaws.com/versions.yml | grep 'version: ' | awk '{print $NF}' | sort | tail -1)
 fi
 
-echo "Running minnaker setup for Linux"
-echo "Will use the following spinnaker-kustomize-patch repo: ${SPIN_GIT_REPO}"
+info "Running minnaker setup for Linux"
+info "Cloning repo: ${SPIN_GIT_REPO}#${BRANCH} into ${BASE_DIR}"
 
-# Scaffold out directories
-# OSS Halyard uses 1000; we're using 1000 for everything
-sudo mkdir -p "${BASE_DIR}/.kube"
-sudo mkdir -p "${BASE_DIR}/.hal/.secret"
-sudo chown -R 1000 "${BASE_DIR}"
+if [ -d "${BASE_DIR}" ]; then
+  warn "${BASE_DIR} exists already.  FOLDER CONTENTS WILL GET OVERWRITTEN!"
+  warn "PROCEEDING in 3 secs... (ctrl-C to cancel; use -B option to specify a different directory)"
+  sleep 3
+fi
+rm -rf ${BASE_DIR}
+git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}"
+cd "${BASE_DIR}"
 
 detect_endpoint
 generate_passwords
-
-### Fix up operator manifests
-SPINNAKER_PASSWORD=$(cat "${BASE_DIR}/.hal/.secret/spinnaker_password")
-# uncomment when functions.sh generates minio password
-#MINIO_PASSWORD=$(cat ${BASE_DIR}/.hal/.secret/minio_password)
-
-# Clone armory/spinnaker-kustomize-patches branch:minnaker and pre-fill manifests
-rm -rf ${BASE_DIR}/spinsvc
-git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}/spinsvc"
-cd "${BASE_DIR}/spinsvc"
-
-rm kustomization.yml
-ln -s recipes/kustomization-minnaker.yml kustomization.yml
-
-#PUBLIC_ENDPOINT="${PUBLIC_ENDPOINT:-spinnaker.$(cat "${BASE_DIR}/.hal/public_endpoint").nip.io}"   # use nip.io which is a DNS that will always resolve.
-#sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/ingress-traefik.yml
-#sed -i "s|spinnaker.mycompany.com|${PUBLIC_ENDPOINT}|g" expose/patch-urls.yml
 update_endpoint
-
-sed -i "s|^http-password=xxx|http-password=${SPINNAKER_PASSWORD}|g" secrets/secrets-example.env
-# uncomment when functions.sh generates minio password
-#sed -i "s|^minioAccessKey=changeme|minioAccessKey=${MINIO_PASSWORD}|g" secrets/secrets-example.env
-sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
-sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
-sed -i "s|token|# token|g" accounts/git/patch-github.yml
-sed -i "s|username|# username|g" accounts/git/patch-gitrepo.yml
-sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
-
-if [[ ${OPEN_SOURCE} -eq 0 ]]; then
-  sed -i "s|xxxxxxxx-.*|${MAGIC_NUMBER}$(uuidgen | cut -c 9-)|" armory/patch-diagnostics.yml
-else
-  # remove armory related patches
-  sed -i "s|- armory|#- armory|g" recipes/kustomization-minnaker.yml
-fi
+hydrate_templates
 
 ### Set up Kubernetes environment
-echo "Installing K3s"
+info "--- Installing K3s ---"
 install_k3s
-echo "Setting kubernetes context to Spinnaker namespace"
+info " --- END K3s --- "
+info "Setting Kubernetes context to Spinnaker namespace"
 sudo env "PATH=$PATH" kubectl config set-context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE}
-echo "Installing yq"
+info "Installing yq"
 install_yq
+info "Installing jq"
+install_jq
 
 ### Deploy Spinnaker with Operator
-cd "${BASE_DIR}/spinsvc"
+cd "${BASE_DIR}"
 
-set -x
-SPIN_FLAVOR=${SPIN_FLAVOR} ./deploy.sh
-set +x
-
-#ln -s "${BASE_DIR}" "${HOME}/spinnaker"
-#ln -s "${BASE_DIR}/operator" "${HOME}/install"
+SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=0 ./deploy.sh
 
 # Install PACRD
-kubectl apply -f https://engineering.armory.io/manifests/pacrd-1.0.1.yaml -n spinnaker
+exec_kubectl_mutating "kubectl apply -f https://engineering.armory.io/manifests/pacrd-1.0.1.yaml -n spinnaker" handle_generic_kubectl_error
 
 echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
 echo 'source <(kubectl completion bash)' >>~/.bashrc
 echo 'alias k=kubectl' >>~/.bashrc
 echo 'complete -F __start_kubectl k' >>~/.bashrc
 
-echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
-echo "https://${PUBLIC_ENDPOINT}"
-echo "username: 'admin'"
-echo "password: '${SPINNAKER_PASSWORD}'"
+# echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
+info "https://${PUBLIC_ENDPOINT}"
+info "username: 'admin'"
+info "password: '${SPINNAKER_PASSWORD}'"
 
-watch kubectl get pods,spinsvc -n spinnaker
+create_spin_endpoint
 
+if [[ ${SPIN_WATCH} != 0 ]]; then
+  watch kubectl get pods,spinsvc -n spinnaker
+fi
