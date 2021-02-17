@@ -85,7 +85,4 @@ detect_endpoint refresh
 update_endpoint
 restart_k3s
 apply_changes
-
-echo "https://${PUBLIC_ENDPOINT}"
-echo "username: 'admin'"
-echo "password: '$(cat ${BASE_DIR}/secrets/spinnaker_password)'"
+spin_endpoint

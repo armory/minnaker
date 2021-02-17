@@ -243,6 +243,8 @@ hydrate_templates () {
 
 create_spin_endpoint () {
 
+info "Creating spin_endpoint helper function"
+
 export BASE_DIR=${BASE_DIR}
 sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash

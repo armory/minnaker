@@ -166,10 +166,7 @@ echo 'source <(kubectl completion bash)' >>~/.bashrc
 echo 'alias k=kubectl' >>~/.bashrc
 echo 'complete -F __start_kubectl k' >>~/.bashrc
 
-# echo "It may take up to 10 minutes for this endpoint to work.  You can check by looking at running pods: 'kubectl -n ${NAMESPACE} get pods'"
-info "https://${PUBLIC_ENDPOINT}"
-info "username: 'admin'"
-info "password: '${SPINNAKER_PASSWORD}'"
+spin_endpoint
 
 if [[ ${SPIN_WATCH} != 0 ]]; then
   watch kubectl get pods,spinsvc -n spinnaker
