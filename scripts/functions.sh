@@ -15,16 +15,64 @@
 # limitations under the License.
 ################################################################################
 
+
+function log() {
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  ORANGE='\033[0;33m'
+  CYAN='\033[0;36m'
+  NC='\033[0m'
+  LEVEL=$1
+  MSG=$2
+  case $LEVEL in
+  "INFO") HEADER_COLOR=$GREEN MSG_COLOR=$NS ;;
+  "WARN") HEADER_COLOR=$ORANGE MSG_COLOR=$NS ;;
+  "KUBE") HEADER_COLOR=$ORANGE MSG_COLOR=$CYAN ;;
+  "ERROR") HEADER_COLOR=$RED MSG_COLOR=$NS ;;
+  esac
+  printf "${HEADER_COLOR}[%-5.5s]${NC} ${MSG_COLOR}%b${NC}" "${LEVEL}" "${MSG}"
+  printf "$(date +"%D %T") [%-5.5s] %b" "${LEVEL}" "${MSG}" >>"$OUT"
+}
+
+function info() {
+  log "INFO" "$1\n"
+}
+
+function warn() {
+  log "WARN" "$1\n"
+}
+
+function error() {
+  log "ERROR" "$1\n" && exit 1
+}
+
+function handle_generic_kubectl_error() {
+  error "Error executing command:\n$ERR_OUTPUT"
+}
+
+function exec_kubectl_mutating() {
+  log "KUBE" "$1\n"
+  ERR_OUTPUT=$({ $1 >>"$OUT"; } 2>&1)
+  EXIT_CODE=$?
+  [[ $EXIT_CODE != 0 ]] && $2
+}
+
 install_k3s () {
+  info "--- Installing K3s ---"
   curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  #curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  info " --- END K3s --- "
 }
 
 install_yq () {
+  info "Installing yq"
   sudo curl -sfL https://github.com/mikefarah/yq/releases/download/4.5.1/yq_linux_amd64 -o /usr/local/bin/yq
   sudo chmod +x /usr/local/bin/yq
 }
 
 install_jq () {
+info "Installing jq"
+
 # install prereqs jq
 # if jq is not installed
 if ! jq --help > /dev/null 2>&1; then
@@ -40,7 +88,7 @@ fi
 }
 
 detect_endpoint () {
-  if [[ ! -s ${BASE_DIR}/secrets/public_ip ]]; then
+  if [[ ! -s ${BASE_DIR}/secrets/public_ip || -n "$1" ]]; then
     if [[ -n "${PUBLIC_IP}" ]]; then
       info "Using provided public IP ${PUBLIC_IP}"
       echo "${PUBLIC_IP}" > ${BASE_DIR}/secrets/public_ip
@@ -67,7 +115,7 @@ update_endpoint () {
   #PUBLIC_ENDPOINT="spinnaker.$(cat "${BASE_DIR}/secrets/public_ip").nip.io"   # use nip.io which is a DNS that will always resolve.
   PUBLIC_ENDPOINT="$(cat "${BASE_DIR}/secrets/public_ip")" 
 
-  info "Updating spinsvc templates with ${PUBLIC_ENDPOINT}"
+  info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
   #yq w -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
   yq d -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host
   yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl https://${PUBLIC_ENDPOINT}
@@ -192,20 +240,20 @@ hydrate_templates () {
 create_spin_endpoint () {
 
 export BASE_DIR=${BASE_DIR}
-
 sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash
-echo "$(kubectl get spinsvc spinnaker -n spinnaker -ojsonpath='{.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl}')"
-# echo "patch-url: $(yq r ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
+#echo "$(kubectl get spinsvc spinnaker -n spinnaker -ojsonpath='{.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl}')"
+echo "$(yq r ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
 [[ -f ${BASE_DIR}/secrets/spinnaker_password ]] && echo "username: 'admin'"
 [[ -f ${BASE_DIR}/secrets/spinnaker_password ]] && echo "password: '$(cat ${BASE_DIR}/secrets/spinnaker_password)'"
 EOF
-
 sudo chmod 755 /usr/local/bin/spin_endpoint
+
 }
 
 restart_k3s (){
   #/usr/local/bin/k3s-killall.sh
+  info "Restarting k3s"
   sudo systemctl restart k3s
 }
 

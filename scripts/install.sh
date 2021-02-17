@@ -48,50 +48,13 @@ BASE_DIR=$PROJECT_DIR/spinsvc
 SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 BRANCH=minnaker
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
+OUT="$PROJECT_DIR/minnaker.log"
 
-OUT="$PROJECT_DIR/install.log"
+### Load Helper Functions
+. "${PROJECT_DIR}/scripts/functions.sh"
 
-function log() {
-  RED='\033[0;31m'
-  GREEN='\033[0;32m'
-  ORANGE='\033[0;33m'
-  CYAN='\033[0;36m'
-  NC='\033[0m'
-  LEVEL=$1
-  MSG=$2
-  case $LEVEL in
-  "INFO") HEADER_COLOR=$GREEN MSG_COLOR=$NS ;;
-  "WARN") HEADER_COLOR=$ORANGE MSG_COLOR=$NS ;;
-  "KUBE") HEADER_COLOR=$ORANGE MSG_COLOR=$CYAN ;;
-  "ERROR") HEADER_COLOR=$RED MSG_COLOR=$NS ;;
-  esac
-  printf "${HEADER_COLOR}[%-5.5s]${NC} ${MSG_COLOR}%b${NC}" "${LEVEL}" "${MSG}"
-  printf "[%-5.5s] %b" "${LEVEL}" "${MSG}" >>"$OUT"
-}
-
-function info() {
-  log "INFO" "$1\n"
-}
-
-function warn() {
-  log "WARN" "$1\n"
-}
-
-function error() {
-  log "ERROR" "$1\n" && exit 1
-}
-
-function handle_generic_kubectl_error() {
-  error "Error executing command:\n$ERR_OUTPUT"
-}
-
-function exec_kubectl_mutating() {
-  log "KUBE" "$1\n"
-  ERR_OUTPUT=$({ $1 >>"$OUT"; } 2>&1)
-  EXIT_CODE=$?
-  [[ $EXIT_CODE != 0 ]] && $2
-}
-
+### Check if running on Mac - if so complain...
+### ToDo: Skip k3s install , and use docker-desktop or minikube context
 if [[ "$(uname -s)" == "Darwin" ]]; then
   error "Use osx_install.sh to install on OSX Docker Desktop"
   exit 1
@@ -154,10 +117,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-# shellcheck disable=SC1090,SC1091
-. "${PROJECT_DIR}/scripts/functions.sh"
-
-
 if [[ ${OPEN_SOURCE} == 1 ]]; then
   info "Using OSS Spinnaker"
   SPIN_FLAVOR=oss
@@ -180,25 +139,23 @@ rm -rf ${BASE_DIR}
 git clone -b ${BRANCH} "${SPIN_GIT_REPO}" "${BASE_DIR}"
 cd "${BASE_DIR}"
 
+### Installing helper tools
+install_yq
+install_jq
+
 detect_endpoint
 generate_passwords
 update_endpoint
 hydrate_templates
+create_spin_endpoint
 
 ### Set up Kubernetes environment
-info "--- Installing K3s ---"
 install_k3s
-info " --- END K3s --- "
 info "Setting Kubernetes context to Spinnaker namespace"
 sudo env "PATH=$PATH" kubectl config set-context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE}
-info "Installing yq"
-install_yq
-info "Installing jq"
-install_jq
 
-### Deploy Spinnaker with Operator
+### Deploy Spinnaker with Spinnaker Operator
 cd "${BASE_DIR}"
-
 SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=0 ./deploy.sh
 
 # Install PACRD
@@ -213,8 +170,6 @@ echo 'complete -F __start_kubectl k' >>~/.bashrc
 info "https://${PUBLIC_ENDPOINT}"
 info "username: 'admin'"
 info "password: '${SPINNAKER_PASSWORD}'"
-
-create_spin_endpoint
 
 if [[ ${SPIN_WATCH} != 0 ]]; then
   watch kubectl get pods,spinsvc -n spinnaker

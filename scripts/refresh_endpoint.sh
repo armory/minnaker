@@ -37,36 +37,15 @@ print_help () {
 }
 
 apply_changes () {
-  cd "${BASE_DIR}/spinsvc"
+  info "Executing ${BASE_DIR}/deploy.sh"
+  cd "${BASE_DIR}"
   ./deploy.sh
 }
 
-# k3s can be in an unknown state sometimes when the instance is stopped and restarted
-restart_k3s () {
-
-  kubectl get apiservice
-
-  while [[ $(kubectl get apiservice | grep False | wc -l) -ne 0 ]];
-  do
-    echo "Waiting for K3s to be up"
-    sleep 5;
-  done
-
-  kubectl get apiservice
-
-  sleep 10
-
-  kubectl delete pods --all -A --force --grace-period=0
-
-  sleep 10
-
-}
-
-####
-
 PUBLIC_ENDPOINT=""
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
-BASE_DIR=/home/ubuntu/spinnaker
+BASE_DIR=${BASE_DIR}
+OUT="$PROJECT_DIR/minnaker.log"
 
 . "${PROJECT_DIR}/scripts/functions.sh"
 
@@ -100,11 +79,13 @@ done
 PATH=${PATH}:/usr/local/bin
 export PATH
 
-detect_endpoint
+info "Refreshing Endpoint"
+
+detect_endpoint refresh
 update_endpoint
 restart_k3s
 apply_changes
 
 echo "https://${PUBLIC_ENDPOINT}"
 echo "username: 'admin'"
-echo "password: '$(cat ${BASE_DIR}/.hal/.secret/spinnaker_password)'"
+echo "password: '$(cat ${BASE_DIR}/secrets/spinnaker_password)'"
