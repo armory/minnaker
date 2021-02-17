@@ -68,6 +68,10 @@ install_yq () {
   info "Installing yq"
   sudo curl -sfL https://github.com/mikefarah/yq/releases/download/4.5.1/yq_linux_amd64 -o /usr/local/bin/yq
   sudo chmod +x /usr/local/bin/yq
+  if [[ ! -e "/usr/local/bin/yq" ]]; then
+    error "failed to install yq - please manually install https://github.com/mikefarah/yq/"
+    exit 1
+  fi
 }
 
 install_jq () {
