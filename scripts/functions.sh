@@ -245,21 +245,21 @@ create_spin_endpoint () {
 
 info "Creating spin_endpoint helper function"
 
-export BASE_DIR=${BASE_DIR}
 sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash
 #echo "$(kubectl get spinsvc spinnaker -n spinnaker -ojsonpath='{.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl}')"
-echo "$(yq r ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
-[[ -f ${BASE_DIR}/secrets/spinnaker_password ]] && echo "username: 'admin'"
-[[ -f ${BASE_DIR}/secrets/spinnaker_password ]] && echo "password: '$(cat ${BASE_DIR}/secrets/spinnaker_password)'"
+echo "$(yq r BASE_DIR/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
+[[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "username: 'admin'"
+[[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "password: '$(cat BASE_DIR/secrets/spinnaker_password)'"
 EOF
 sudo chmod 755 /usr/local/bin/spin_endpoint
 
+sed -i 's|BASE_DIR|${BASE_DIR}|g' /usr/local/bin/spin_endpoint
 }
 
 restart_k3s (){
-  #/usr/local/bin/k3s-killall.sh
   info "Restarting k3s"
+  /usr/local/bin/k3s-killall.sh
   sudo systemctl restart k3s
 }
 
