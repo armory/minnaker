@@ -7,6 +7,12 @@ spec:
   description: A sample showing how to define artifacts.
   application: &app-name armory-sample
   stages:
+    - type: manualJudgment
+      properties:
+        name: Manual example
+        refId: "1"
+        failPipeline: true
+        instructions: Check if this stage works
     - type: deployManifest
       properties:
         name: Deploy text manifest
