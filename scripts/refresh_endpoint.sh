@@ -44,7 +44,7 @@ apply_changes () {
 
 PUBLIC_ENDPOINT=""
 PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
-BASE_DIR=${BASE_DIR}
+BASE_DIR=${BASE_DIR:=$PROJECT_DIR/spinsvc}
 OUT="$PROJECT_DIR/minnaker.log"
 
 . "${PROJECT_DIR}/scripts/functions.sh"
