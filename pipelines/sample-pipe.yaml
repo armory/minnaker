@@ -12,7 +12,7 @@ spec:
         name: Manual example
         refId: "1"
         failPipeline: true
-        instructions: Check if this stage works
+        instructions: "Click Here ->  <a href=http://a594ebf7154144c8b840a5004b8ed253-1521180453.us-west-2.elb.amazonaws.com/productpage>Test App</a>   ---  Refresh App to See Change! <p><b>Select DropDown Option click \"Continue\"</b></p>"
     - type: deployManifest
       properties:
         name: Deploy text manifest
