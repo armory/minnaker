@@ -1,7 +1,9 @@
 # file: kustomization.yaml
 resources:
-  - sample-app.yaml
-  - sample-pipe.yaml
+  - armory-app.yaml
+  - armory-basic-k8s-pipe.yaml
+  - armory-jenkins.yaml
+  - armory-github.yaml
 #patchesStrategicMerge:
 #  - patch.yaml
 #namespace: spinnaker  # Note: you should change this value if you are _not_ deploying into the `spinnaker` namespace.
