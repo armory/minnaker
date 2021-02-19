@@ -2,9 +2,9 @@
 apiVersion: pacrd.armory.spinnaker.io/v1alpha1
 kind: Pipeline
 metadata:
-  name: armory-sample-pipeline-kubernetes
+  name: deploy-nginx-to-k8s
 spec:
-  description: A sample showing how to define artifacts.
+  description: Basic nginx deploy to k8s 
   application: &app-name armory-sample
   stages:
     - type: manualJudgment
