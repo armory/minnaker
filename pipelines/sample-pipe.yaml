@@ -16,8 +16,8 @@ spec:
     - type: deployManifest
       properties:
         name: Deploy text manifest
-        refId: "1"
-        requisiteStageRefIds: [ ]
+        refId: "2"
+        requisiteStageRefIds: [ 1 ]
         account: spinnaker
         cloudProvider: kubernetes
         moniker:
