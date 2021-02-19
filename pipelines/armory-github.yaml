@@ -9,7 +9,7 @@ spec:
   stages:
     - type: manualJudgment
       properties:
-        name: Slack Chat Ops Approval
+        name: Configure Github Integration
         refId: "1"
         failPipeline: true
         instructions: "Click Here ->  <a href=http://a594ebf7154144c8b840a5004b8ed253-1521180453.us-west-2.elb.amazonaws.com/productpage>Configure Github</a><p><b>Watch Video and connect Github</b></p>"
