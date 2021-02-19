@@ -9,7 +9,7 @@ spec:
   stages:
     - type: manualJudgment
       properties:
-        name: Slack Chat Ops Approval (slack)
+        name: This deploys locally on K3s.  Want External K8s?
         refId: "1"
         failPipeline: true
         instructions: "Click Here ->  <a href=http://a594ebf7154144c8b840a5004b8ed253-1521180453.us-west-2.elb.amazonaws.com/productpage>Connect to Deployment Cluster?</a><p><b>Watch Video and Configure Armory Agent</b></p>"
