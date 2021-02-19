@@ -24,6 +24,7 @@ spec:
           app: *app-name
         skipExpressionEvaluation: true
         source: text
+        comments: This is a test for weekhooks
         manifests:
           - |
             apiVersion: apps/v1
