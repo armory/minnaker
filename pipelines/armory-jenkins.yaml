@@ -4,7 +4,7 @@ kind: Pipeline
 metadata:
   name: configure-jenkins-integration
 spec:
-  description: Basic nginx deploy to k8s 
+  description: Click Configure gear to the Right for Instructions 
   application: &app-name armory-samples
   stages:
     - type: manualJudgment
