@@ -30,7 +30,7 @@ spec:
             apiVersion: apps/v1
             kind: Deployment
             metadata:
-              name: nginx-deployment
+              name: new-microservice
               namespace: prod
               labels:
                 app: nginx
