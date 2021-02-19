@@ -4,7 +4,7 @@ kind: Pipeline
 metadata:
   name: configure-slack-integration
 spec:
-  description: Click Configure gear to the Right for Instructions 
+  description: Click "Start Manual Execution" to the Right for Instructions 
   application: &app-name armory-samples
   stages:
     - type: manualJudgment
