@@ -2,7 +2,7 @@
 apiVersion: pacrd.armory.spinnaker.io/v1alpha1
 kind: Pipeline
 metadata:
-  name: Configure-Jenkins-Integration
+  name: configure-github-integration
 spec:
   description: Basic nginx deploy to k8s 
   application: &app-name armory-samples
