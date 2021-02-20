@@ -81,7 +81,7 @@ export PATH
 
 info "Refreshing Endpoint"
 
-detect_endpoint refresh
+detect_endpoint force_refresh
 update_endpoint
 restart_k3s
 apply_changes

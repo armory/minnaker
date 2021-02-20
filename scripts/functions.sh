@@ -92,6 +92,7 @@ fi
 }
 
 detect_endpoint () {
+  info "Trying to detect endpoint"
   if [[ ! -s ${BASE_DIR}/secrets/public_ip || -n "$1" ]]; then
     if [[ -n "${PUBLIC_IP}" ]]; then
       info "Using provided public IP ${PUBLIC_IP}"
@@ -99,12 +100,14 @@ detect_endpoint () {
     else 
       if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
         # change to ask AWS public metadata? http://169.254.169.254/latest/meta-data/public_ipv4
-        while [[ ! -s ${BASE_DIR}/secrets/public_ip ]]; do
-          info "Detected cloud metadata endpoint"
-          info "Trying to determine public IP address (using 'dig +short TXT o-o.myaddr.l.google.com @ns1.google.com')"
-          sleep 1
-          dig +short TXT o-o.myaddr.l.google.com @ns1.google.com | sed 's|"||g' | tee ${BASE_DIR}/secrets/public_ip
-        done
+        #rm ${BASE_DIR}/secrets/public_ip
+        #while [[ ! -s ${BASE_DIR}/secrets/public_ip ]]; do
+        info "Detected cloud metadata endpoint"
+        info "Trying to determine public IP address (using 'curl -m http://169.254.169.254/latest/meta-data/public-ipv4')"
+        info "IP: $(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 | tee ${BASE_DIR}/secrets/public_ip)"
+        #  info "Trying to determine public IP address (using 'dig +short TXT o-o.myaddr.l.google.com @ns1.google.com')"
+        #  dig +short TXT o-o.myaddr.l.google.com @ns1.google.com | sed 's|"||g' | tee ${BASE_DIR}/secrets/public_ip
+        #done
       else
         info "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/secrets/public_ip): $(ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/secrets/public_ip)"
       fi
