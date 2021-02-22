@@ -79,7 +79,7 @@ done
 PATH=${PATH}:/usr/local/bin
 export PATH
 
-info "Refreshing Endpoint"
+info "Refreshing Endpoint - Please note this can take a few minutes since we need to restart k3s"
 
 detect_endpoint force_refresh
 update_endpoint
