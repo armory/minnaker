@@ -6,7 +6,7 @@ Minnaker is a simple way to install Spinnaker inside a VM.
 
 Minnaker performs the following actions when run on a single Linux instance:
 
-* Installs [k3s](https://k3s.io/) with Traefik turned off.
+* Installs [k3s](https://k3s.io/) with Traefik.
 * Installs minio in k3s with a local volume.
 * Installs mysql in k3s.
 * Installs redis in k3s.
