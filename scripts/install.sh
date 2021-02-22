@@ -160,7 +160,7 @@ SPIN_FLAVOR=${SPIN_FLAVOR} SPIN_WATCH=0 ./deploy.sh
 
 # Install PACRD
 exec_kubectl_mutating "kubectl apply -f https://engineering.armory.io/manifests/pacrd-1.0.1.yaml -n spinnaker" handle_generic_kubectl_error
-exec_kubectl_mutating "kubectl apply -k pipelines -n spinnaker" handle_generic_kubectl_error
+exec_kubectl_mutating "kubectl apply -k ${PROJECT_DIR}/pipelines -n spinnaker" handle_generic_kubectl_error
 
 echo '' >>~/.bashrc                                     # need to add empty line in case file doesn't end in newline
 echo 'source <(kubectl completion bash)' >>~/.bashrc

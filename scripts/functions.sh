@@ -257,7 +257,7 @@ echo "$(yq r BASE_DIR/expose/patch-urls.yml spec.spinnakerConfig.config.security
 EOF
 sudo chmod 755 /usr/local/bin/spin_endpoint
 
-sed -i 's|BASE_DIR|${BASE_DIR}|g' /usr/local/bin/spin_endpoint
+sudo sed -i 's|BASE_DIR|${BASE_DIR}|g' /usr/local/bin/spin_endpoint
 }
 
 restart_k3s (){
