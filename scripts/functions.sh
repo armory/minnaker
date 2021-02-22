@@ -66,7 +66,7 @@ install_k3s () {
 
 install_yq () {
   info "Installing yq"
-  sudo curl -sfL https://github.com/mikefarah/yq/releases/download/v4.6.0/yq_linux_amd64 -o /usr/local/bin/yq
+  sudo curl -sfL https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_amd64 -o /usr/local/bin/yq
   sudo chmod +x /usr/local/bin/yq
   if [[ ! -e "/usr/local/bin/yq" ]]; then
     error "failed to install yq - please manually install https://github.com/mikefarah/yq/"
