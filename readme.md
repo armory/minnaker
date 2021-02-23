@@ -105,12 +105,12 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
     outputs: 
     ```bash
-    https://spinnaker.192.168.64.3.nip.io
+    https://192.168.64.3
     username: 'admin'
     password: 'xxxxx'
     ```
     
-2. In your browser, navigate to the address (https://spinnaker.IP.nip.io/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
+2. In your browser, navigate to the address (https://192.168.64.3/) for Spinnaker from step 1. This is Deck, the Spinnaker UI.
 
      If you installed Minnaker on a local VM, you must access it from your local machine. If you deployed Minnaker in the cloud, such as an EC2 instance, you can access Spinnaker from any machine that has access to that 'Public IP'.
 
