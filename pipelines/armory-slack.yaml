@@ -1,0 +1,15 @@
+# file: deploy-nginx.yaml
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: configure-slack-integration
+spec:
+  description: Click "Start Manual Execution" to the Right for Instructions 
+  application: &app-name armory-samples
+  stages:
+    - type: manualJudgment
+      properties:
+        name: Configure Slack Integration
+        refId: "1"
+        failPipeline: true
+        instructions: "Click Here ->  <a href=http://a594ebf7154144c8b840a5004b8ed253-1521180453.us-west-2.elb.amazonaws.com/productpage>Configure Slack</a><p><b>Watch Video and Configure Slack</b></p>"

@@ -1,0 +1,8 @@
+#file: application.yaml
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Application
+metadata:
+  name: armory-samples
+spec:
+  email: test@armory.io
+  description: Description

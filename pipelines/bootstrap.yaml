@@ -1,0 +1,65 @@
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap
+spec:
+  email: chad.tripod@armory.io
+  description: Sample pipeline showing a blue/green deployment
+---
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: click-start-manual-execution
+spec:
+  description: Click "Start Manual Execution" Link to the Right.  Then see the "Armroy samples" Application
+  application: &app-name bootstrap
+  expectedArtifacts:
+    - id: &manifest-repo-id pipelines 
+      displayName: manifest-repo
+      matchArtifact: &manifest-repo-artifact
+        type: git/repo
+        properties:
+          artifactAccount: gitrepo
+          reference: https://github.com/armory/minnaker.git
+          version: pacrd
+      defaultArtifact:
+        <<: *manifest-repo-artifact
+      useDefaultArtifact: true
+      usePriorArtifact: false
+  stages:
+    - type: bakeManifest
+      properties:
+        templateRenderer: KUSTOMIZE
+        refId: "1"
+        name: Render Kustomize Template
+        kustomizeFilePath: "pipelines/kustomization.yaml"
+        inputArtifact:
+          id: *manifest-repo-id
+          account: gitrepo
+        expectedArtifacts:
+          - id: &rendered-manifest-id rendered-manifest-id
+            displayName: app-manifest
+            useDefaultArtifact: false
+            usePriorArtifact: false
+            matchArtifact:
+              type: embedded/base64
+              properties:
+                name: app-manifest
+    - type: manualJudgment
+      properties: 
+        name: Continue Deployment?
+        refId: "2"
+        requisiteStageRefIds: [ "1" ]
+    - type: deployManifest
+      properties:
+        name: Deploy Application
+        refId: "3"
+        requisiteStageRefIds: ["2"]
+        account: spinnaker
+        cloudProvider: kubernetes
+        source: artifact
+        manifestArtifactAccount: embedded-artifact
+        manifestArtifactId: *rendered-manifest-id
+        moniker:
+          app: *app-name
+        namespaceOverride: spinnaker
