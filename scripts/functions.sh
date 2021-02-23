@@ -59,7 +59,7 @@ function exec_kubectl_mutating() {
 
 install_k3s () {
   info "--- Installing K3s ---"
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh -
   #curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
   info " --- END K3s --- "
 }
@@ -257,7 +257,7 @@ echo "$(yq r BASE_DIR/expose/patch-urls.yml spec.spinnakerConfig.config.security
 EOF
 sudo chmod 755 /usr/local/bin/spin_endpoint
 
-sudo sed -i 's|BASE_DIR|${BASE_DIR}|g' /usr/local/bin/spin_endpoint
+sudo sed -i "s|BASE_DIR|${BASE_DIR}|g" /usr/local/bin/spin_endpoint
 }
 
 restart_k3s (){
