@@ -49,25 +49,19 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 ## Installation
 
 1. Login (SSH) to your VM or bare metal box.
-2. Download the minnaker tarball:
+2. Download the minnaker tarball and untar:
 
     ```bash
-    curl -LO https://github.com/armory/minnaker/releases/latest/download/minnaker.tgz
+    curl -L https://github.com/armory/minnaker/archive/0.1.0.tar.gz | tar -zxv
     ```
 
-3. Untar the tarball (will create a `./minnaker` directory in your current working directory):
+3. Change into the directory:
 
     ```bash
-    tar -xzvf minnaker.tgz
+    cd minnaker-0.1.0
     ```
 
-4. Change into the directory:
-
-    ```bash
-    cd minnaker
-    ```
-
-5. Execute the install script. Note the following options before running the script:
+4. Execute the install script. Note the following options before running the script:
      * Add the `-o` flag if you want to install open source Spinnaker.
      * By default, the script installs Armory Spinnaker and uses your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.
      * For bare metal or a local VM, specify the IP address for your server with `-P` flag. `-P` is the 'Public Endpoint' and must be an address or DNS name you will use to access Spinnaker (an IP address reachable by your end users).
@@ -85,11 +79,11 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
     Installation can take between 5-10 minutes to complete depending on VM size.
 
-6. Once Minnaker is up and running, you can make changes to its configuration using `kustomize` and the `spinnaker-operator` under the folder `~/spinnaker/spinsvc`.  For example, to change the version of Spinnaker that is installed, you can do this:
+5. Once Minnaker is up and running, you can make changes to its configuration using `kustomize` and the `spinnaker-operator` under the folder `~/minnaker-1.0.1/spinsvc`.  For example, to change the version of Spinnaker that is installed, you can do this:
 
-  * Using your favorite editor, edit the file: `~/spinnaker/spinsvc/core_config/patch-version.yml`
+  * Using your favorite editor, edit the file: `~/minnaker-1.0.1/spinsvc/core_config/patch-version.yml`
   * Update line 8 to the version you desire. e.g. `version: 2.24.0`
-  * Then either run `~/spinnaker/spinsvc/deploy.sh` or `kubectl apply -k ~/spinnaker/spinsvc`
+  * Then either run `cd ~/minnaker-1.0.1/spinsvc && ./deploy.sh` or `kubectl apply -k ~/minnaker-1.0.1/spinsvc`
   * To find the latest versions available:
       * [Spinnaker](https://spinnaker.io/community/releases/versions/#latest-stable)
       * [Armory](https://docs.armory.io/docs/release-notes/rn-armory-spinnaker/)
