@@ -52,13 +52,13 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 2. Download the minnaker tarball and untar:
 
     ```bash
-    curl -L https://github.com/armory/minnaker/archive/0.1.0.tar.gz | tar -zxv
+    curl -L https://github.com/armory/minnaker/archive/0.1.1.tar.gz | tar -zxv
     ```
 
 3. Change into the directory:
 
     ```bash
-    cd minnaker-0.1.0
+    cd minnaker-0.1.1
     ```
 
 4. Execute the install script. Note the following options before running the script:
