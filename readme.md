@@ -27,7 +27,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
     * 8GiB of RAM (recommend 16)
     * 30GiB of HDD (recommend 40+)
     * NAT or Bridged networking with access to the internet
-    * Install `curl` and `tar` (if they're not already installed):
+    * Install `curl`, `git`, and `tar` (if they're not already installed):
         * `sudo apt-get install curl tar`
     * Port `443` on your VM needs to be accessible from your workstation / browser. By default, Minnaker installs Spinnaker and configures it to listen on port `443`, using paths `/` and `/api/v1`(for the UI and API).
 * OSX
