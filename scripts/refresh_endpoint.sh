@@ -32,61 +32,22 @@ print_help () {
   set +x
   echo "Usage: refresh_endpoint.sh"
   echo "               [-P|--public-endpoint <PUBLIC_IP_OR_DNS_ADDRESS>]  : Specify public IP (or DNS name) for instance (rather than autodetection)"
+  echo "               [-B|--base-dir <BASE_DIRECTORY>]                   : Specify root directory to use for manifests"
   set -x
 }
 
-detect_endpoint () {
-  if [[ -n "${PUBLIC_ENDPOINT}" ]]; then
-    echo "Using provided public endpoint ${PUBLIC_ENDPOINT}"
-    echo "${PUBLIC_ENDPOINT}" > ${BASE_DIR}/.hal/public_endpoint
-    touch ${BASE_DIR}/.hal/public_endpoint_provided
-  elif [[ ! -s ${BASE_DIR}/.hal/public_endpoint_provided ]]; then
-    if [[ $(curl -m 1 169.254.169.254 -sSfL &>/dev/null; echo $?) -eq 0 ]]; then
-      # Remove the entry
-      >${BASE_DIR}/.hal/public_endpoint
-      while [[ ! -s ${BASE_DIR}/.hal/public_endpoint ]]; do
-        echo "Detected cloud metadata endpoint"
-        echo "Trying to determine public IP address (using 'dig +short TXT o-o.myaddr.l.google.com @ns1.google.com')"
-        sleep 1
-        dig +short TXT o-o.myaddr.l.google.com @ns1.google.com | sed 's|"||g' | tee ${BASE_DIR}/.hal/public_endpoint
-      done
-    else
-      echo "No cloud metadata endpoint detected, detecting interface IP (and storing in ${BASE_DIR}/.hal/public_endpoint):"
-      ip r get 8.8.8.8 | awk 'NR==1{print $7}' | tee ${BASE_DIR}/.hal/public_endpoint
-      cat ${BASE_DIR}/.hal/public_endpoint
-    fi
-  else
-    echo "Using previously defined public endpoint $(cat ${BASE_DIR}/.hal/public_endpoint)"
-  fi
-}
-
-update_endpoint () {
-  ENDPOINT=$(cat ${BASE_DIR}/.hal/public_endpoint)
-  yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.uiSecurity.overrideBaseUrl https://${ENDPOINT}
-  yq w -i ${BASE_DIR}/.hal/config deploymentConfigurations[0].security.apiSecurity.overrideBaseUrl  https://${ENDPOINT}/api/v1
-}
-
 apply_changes () {
-  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
-  do
-    echo "Waiting for Halyard pod to start"
-    sleep 2;
-  done
-
-  # We do this twice, because for some reason Kubernetes sometimes reports pods as healthy on first start after a reboot
-  sleep 15
-
-  while [[ $(kubectl get statefulset -n spinnaker halyard -ojsonpath='{.status.readyReplicas}') -ne 1 ]];
-  do
-    echo "Waiting for Halyard pod to start"
-    sleep 2;
-  done
-
-  kubectl -n spinnaker exec -i halyard-0 -- hal deploy apply
+  info "Executing ${BASE_DIR}/deploy.sh"
+  cd "${BASE_DIR}"
+  ./deploy.sh
 }
 
 PUBLIC_ENDPOINT=""
-BASE_DIR=/etc/spinnaker
+PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd )
+BASE_DIR=${BASE_DIR:=$PROJECT_DIR/spinsvc}
+OUT="$PROJECT_DIR/minnaker.log"
+
+. "${PROJECT_DIR}/scripts/functions.sh"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -118,27 +79,10 @@ done
 PATH=${PATH}:/usr/local/bin
 export PATH
 
-detect_endpoint
+info "Refreshing Endpoint - Please note this can take a few minutes since we need to restart k3s"
+
+detect_endpoint force_refresh
 update_endpoint
-
-kubectl get apiservice
-
-while [[ $(kubectl get apiservice | grep False | wc -l) -ne 0 ]];
-do
-  echo "Waiting for K3s to be up"
-  sleep 5;
-done
-
-kubectl get apiservice
-
-sleep 10
-
-kubectl delete pods --all -A --force --grace-period=0
-
-sleep 10
-
+restart_k3s
 apply_changes
-
-echo "https://$(cat /etc/spinnaker/.hal/public_endpoint)"
-echo "username: 'admin'"
-echo "password: '$(cat /etc/spinnaker/.hal/.secret/spinnaker_password)'"
+spin_endpoint
