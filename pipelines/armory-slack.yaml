@@ -12,4 +12,5 @@ spec:
         name: Configure Slack Integration
         refId: "1"
         failPipeline: true
-        instructions: "Click Here ->  <a href=http://a594ebf7154144c8b840a5004b8ed253-1521180453.us-west-2.elb.amazonaws.com/productpage>Configure Slack</a><p><b>Watch Video and Configure Slack</b></p>"
+        instructions: "Click Here ->  <a href=https://docs.armory.io/docs/armory-admin/notifications-slack-configure/>Configure Slack</a><p><b>Watch Video and Configure Slack</b></p>"
+

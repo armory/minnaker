@@ -1,0 +1,8 @@
+#file: application.yaml
+apiVersion: pacrd.armory.spinnaker.io/v1alpha1
+kind: Application
+metadata:
+  name: armory-aws
+spec:
+  email: test@armory.io
+  description: Pre-built AWS armory app with pipelines for all targets (EC2, ECS, Fargate, EKS, Lambda)

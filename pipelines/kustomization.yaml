@@ -7,6 +7,7 @@ resources:
   - armory-slack.yaml
   - bootstrap.yaml
   - namespaces.yaml
+
 #patchesStrategicMerge:
 #  - patch.yaml
 #namespace: spinnaker  # Note: you should change this value if you are _not_ deploying into the `spinnaker` namespace.
