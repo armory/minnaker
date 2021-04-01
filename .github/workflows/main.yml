@@ -1,0 +1,20 @@
+# This action creates a new patch release on push to master.
+# The behavior can be modified based on commit message or PR label.
+# See https://github.com/rymndhng/release-on-push-action#readme for more info.
+
+name: Publish Patch Release
+
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  release-on-push:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: rymndhng/release-on-push-action@v0.16.0
+        with:
+          bump_version_scheme: patch
