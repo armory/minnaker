@@ -311,3 +311,4 @@ kubectl --context docker-desktop delete ns spinnaker-operator
 ```
 * (Optionally) delete the `ingress-nginx` namespace: `kubectl --context docker-desktop delete ns ingress-nginx`
 * (Optionally) delete the local resources (including all pipeline defs): `rm -rf ~/minnaker`
+
