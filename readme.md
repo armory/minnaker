@@ -52,13 +52,13 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 2. Download the minnaker tarball and untar:
 
     ```bash
-    curl -L https://github.com/armory/minnaker/archive/0.1.1.tar.gz | tar -zxv
+    curl -L https://github.com/armory/minnaker/archive/0.1.2.tar.gz | tar -zxv
     ```
 
 3. Change into the directory:
 
     ```bash
-    cd minnaker-0.1.1
+    cd minnaker-0.1.*
     ```
 
 4. Execute the install script. Note the following options before running the script:
@@ -311,4 +311,3 @@ kubectl --context docker-desktop delete ns spinnaker-operator
 ```
 * (Optionally) delete the `ingress-nginx` namespace: `kubectl --context docker-desktop delete ns ingress-nginx`
 * (Optionally) delete the local resources (including all pipeline defs): `rm -rf ~/minnaker`
-
