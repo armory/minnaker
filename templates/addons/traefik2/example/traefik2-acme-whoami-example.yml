@@ -1,0 +1,46 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: whoami-app
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         app: whoami-app
+   template:
+      metadata:
+         labels:
+            app: whoami-app
+      spec:
+         containers:
+            - name: whoami-app
+              image: containous/whoami
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: whoami-app
+   labels:
+      app: whoami-app
+spec:
+   ports:
+      - port: 80
+        name: whoami-app
+   selector:
+      app: whoami-app
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`whoami.54.225.84.77.nip.io`)
+    kind: Rule
+    services:
+    - name: whoami-app
+      port: 80
+  tls: # This route uses TLS
+      certResolver: myresolver

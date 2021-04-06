@@ -30,6 +30,7 @@ print_help () {
   echo "               [-G|--git-spinnaker]                               : Git Spinnaker Kustomize URL (instead of https://github.com/armory/spinnaker-kustomize-patches)"
   echo "               [--branch]                                         : Branch to clone (default 'minnaker')"
   echo "               [-n|--nowait]                                      : Don't wait for Spinnaker to come up"
+  echo "               [-t|--traefik2]                                    : Use Traefik v2"
   set -x
 }
 
@@ -49,6 +50,7 @@ SPIN_GIT_REPO="https://github.com/armory/spinnaker-kustomize-patches"
 BRANCH=minnaker
 SPIN_WATCH=1                 # Wait for Spinnaker to come up
 OUT="$PROJECT_DIR/minnaker.log"
+TRAEFIK=1                    # Traefik v1 which comes with k3s
 
 ### Load Helper Functions
 . "${PROJECT_DIR}/scripts/functions.sh"
@@ -109,6 +111,10 @@ while [ "$#" -gt 0 ]; do
       info "Will not wait for Spinnaker to come up"
       SPIN_WATCH=0
       ;;
+    -t|--traefik2)
+      info "Using Traefik v2 instead of the default Traefik installed with k3s"
+      TRAEFIK=2
+      ;;
     -h|--help)
       print_help
       exit 1
@@ -150,7 +156,7 @@ hydrate_templates
 create_spin_endpoint
 
 ### Set up Kubernetes environment
-install_k3s
+install_k3s $TRAEFIK
 info "Setting Kubernetes context to Spinnaker namespace"
 sudo env "PATH=$PATH" kubectl config set-context ${KUBERNETES_CONTEXT} --namespace ${NAMESPACE}
 

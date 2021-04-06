@@ -58,9 +58,20 @@ function exec_kubectl_mutating() {
 
 install_k3s () {
   info "--- Installing K3s ---"
-  curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh -
-  #curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE=644 sh -
+  log "Install Traefik version $1\n"
+  if [[ $1 -eq 1 ]]; then
+    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh
+  else
+    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san 54.225.84.77" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh -s - --disable=traefik
+    install_traefik2
+  fi
   info " --- END K3s --- "
+}
+
+install_traefik2 () {
+  info "--- Installing Traefik v2 ---"
+  exec_kubectl_mutating "kubectl apply -f ${PROJECT_DIR}/templates/addons/traefik2" handle_generic_kubectl_error
+  info "--- END Traefik v2 ---"
 }
 
 install_yq () {
