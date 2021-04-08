@@ -229,6 +229,11 @@ data:
     entryPoints:
       http:
         address: ":8000"
+        http:
+          redirections:
+            entrypoint:
+              to: 443
+              scheme: https
       https:
         address: ":8443"
         http:
