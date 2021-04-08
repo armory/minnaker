@@ -232,7 +232,7 @@ data:
         http:
           redirections:
             entrypoint:
-              to: 443
+              to: ":443"
               scheme: https
       https:
         address: ":8443"
