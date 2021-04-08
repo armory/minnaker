@@ -395,6 +395,10 @@ items:
         name: https
         targetPort: "https"
         protocol: "TCP"
+      - port: 9000
+        name: traefik
+        targetPort: "traefik"
+        protocol: "TCP"
 ---
 # Source: traefik/templates/dashboard-hook-ingressroute.yaml
 apiVersion: traefik.containo.us/v1alpha1
