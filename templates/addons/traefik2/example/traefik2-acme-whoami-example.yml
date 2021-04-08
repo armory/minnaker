@@ -35,7 +35,7 @@ metadata:
   name: ingressroutetls
 spec:
   entryPoints:
-    - websecure
+    - https
   routes:
   - match: Host(`whoami.54.225.84.77.nip.io`)
     kind: Rule
@@ -43,4 +43,4 @@ spec:
     - name: whoami-app
       port: 80
   tls: # This route uses TLS
-      certResolver: myresolver
+      certResolver: lestaging
