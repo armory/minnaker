@@ -137,7 +137,6 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: traefik
-  namespace: kube-system
   labels:
     app.kubernetes.io/name: traefik
     helm.sh/chart: traefik-9.18.2
@@ -192,7 +191,6 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: traefik
-  namespace: kube-system
   labels:
     app.kubernetes.io/name: traefik
     helm.sh/chart: traefik-9.18.2
@@ -205,7 +203,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: traefik
-    namespace: default
+    namespace: kube-system
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -227,32 +225,34 @@ data:
       dashboard: true
     log:
       level: DEBUG
-      format: json
+      format: common
     entryPoints:
       http:
-        address: ":80"
+        address: ":8000"
       https:
-        address: ":443"
+        address: ":8443"
         http:
           tls:
             certResolver: lestaging
+      traefik:
+        address: ":9000"
     certificatesResolvers:
       lestaging:
         acme:
           caserver: https://acme-staging-v02.api.letsencrypt.org/directory
           email: minnaker@armory.io
-          storage: /ssl/acme-staging.json
+          storage: /data/acme-staging.json
           tlsChallenge: {}
       leprod:
         acme:
           caserver: https://acme-v02.api.letsencrypt.org/directory
           email: minnaker@armory.io
-          storage: /ssl/acme.json
+          storage: /data/acme.json
           tlsChallenge: {}
     tls:
       certificates:
-        - certFile: /ssl/tls.crt
-          keyFile: /ssl/tls.key
+        - certFile: /data/tls.crt
+          keyFile: /data/tls.key
       options:
         default:
           minVersion: VersionTLS12
@@ -331,17 +331,19 @@ spec:
           protocol: "TCP"
         - name: "http"
           protocol: "TCP"
-          containerPort: 80
+          containerPort: 8000
         - name: "https"
-          containerPort: 443
           protocol: "TCP"
+          containerPort: 8443
         securityContext:
           capabilities:
             drop:
             - ALL
+            add:
+            - NET_BIND_SERVICE
           readOnlyRootFilesystem: true
           runAsGroup: 65532
-          runAsNonRoot: true
+          runAsNonRoot: false
           runAsUser: 65532
         volumeMounts:
           - name: data
@@ -350,8 +352,6 @@ spec:
             mountPath: /tmp
           - name: config
             mountPath: /config
-          - name: ssl
-            mountPath: /ssl
         args:
           - --configfile=/config/traefik.yml
       volumes:
@@ -363,10 +363,6 @@ spec:
           configMap:
             defaultMode: 420
             name: traefik
-        - name: ssl
-          secret:
-            defaultMode: 420
-            secretName: traefik-default-cert
       securityContext:
         fsGroup: 65532
 ---
