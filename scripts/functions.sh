@@ -59,18 +59,25 @@ function exec_kubectl_mutating() {
 install_k3s () {
   info "--- Installing K3s ---"
   log "Install Traefik version $1\n"
-  if [[ $1 -eq 1 ]]; then
-    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh
-  else
-    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san 54.225.84.77" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh -s - --disable=traefik
+
+  # if arg1 is = 2 then update for Traefik version 2
+  # else assume this is for Traefik version 1
+  if [[ $1 -eq 2 ]]; then
+    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh -s - --disable=traefik
     install_traefik2
+  else
+    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--tls-san $(cat ${BASE_DIR}/secrets/public_ip)" INSTALL_K3S_VERSION="v1.19.7+k3s1" K3S_KUBECONFIG_MODE="644" sh
   fi
+
   info " --- END K3s --- "
 }
 
 install_traefik2 () {
   info "--- Installing Traefik v2 ---"
   exec_kubectl_mutating "kubectl apply -f ${PROJECT_DIR}/templates/addons/traefik2" handle_generic_kubectl_error
+  yq d -i ${BASE_DIR}/expose/ingress-traefik.yml metadata.annotations.traefik*
+  yq w -i ${BASE_DIR}/expose/ingress-traefik.yml 'metadata.annotations.(traefik.ingress.kubernetes.io/router.entrypoints)' https
+  yq w -i ${BASE_DIR}/expose/ingress-traefik.yml 'metadata.annotations.(traefik.ingress.kubernetes.io/router.tls.certresolver)' lestaging
   info "--- END Traefik v2 ---"
 }
 
@@ -129,12 +136,19 @@ detect_endpoint () {
 }
 
 update_endpoint () {
-  #PUBLIC_ENDPOINT="spinnaker.$(cat "${BASE_DIR}/secrets/public_ip").nip.io"   # use nip.io which is a DNS that will always resolve.
-  PUBLIC_ENDPOINT="$(cat "${BASE_DIR}/secrets/public_ip")" 
+  # if arg1 is = 2 then update for Traefik version 2
+  # else assume this is for Traefik version 1
+  if [[ $1 -eq 2 ]]; then
+    PUBLIC_ENDPOINT="spinnaker.$(cat "${BASE_DIR}/secrets/public_ip").nip.io"   # use nip.io which is a DNS that will always resolve.
+    info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
+    sed -i "s/main:.*/main: $PUBLIC_ENDPOINT/" ${PROJECT_DIR}/templates/addons/traefik2/traefik2-cm.yml
+    yq w -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
+  else
+    PUBLIC_ENDPOINT="$(cat "${BASE_DIR}/secrets/public_ip")" 
+    info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
+    yq d -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host
+  fi
 
-  info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
-  #yq w -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
-  yq d -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host
   yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl https://${PUBLIC_ENDPOINT}
   yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.overrideBaseUrl  https://${PUBLIC_ENDPOINT}/api
   yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.corsAccessPattern  https://${PUBLIC_ENDPOINT}
@@ -255,19 +269,18 @@ hydrate_templates () {
 # }
 
 create_spin_endpoint () {
+  info "Creating spin_endpoint helper function"
 
-info "Creating spin_endpoint helper function"
-
-sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
+  sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash
 #echo "$(kubectl get spinsvc spinnaker -n spinnaker -ojsonpath='{.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl}')"
 echo "$(yq r BASE_DIR/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
 [[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "username: 'admin'"
 [[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "password: '$(cat BASE_DIR/secrets/spinnaker_password)'"
 EOF
-sudo chmod 755 /usr/local/bin/spin_endpoint
 
-sudo sed -i "s|BASE_DIR|${BASE_DIR}|g" /usr/local/bin/spin_endpoint
+  sudo chmod 755 /usr/local/bin/spin_endpoint
+  sudo sed -i "s|BASE_DIR|${BASE_DIR}|g" /usr/local/bin/spin_endpoint
 }
 
 restart_k3s (){

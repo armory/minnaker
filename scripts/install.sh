@@ -151,7 +151,7 @@ install_jq
 
 detect_endpoint
 generate_passwords
-update_endpoint
+update_endpoint $TRAEFIK
 hydrate_templates
 create_spin_endpoint
 

@@ -205,73 +205,6 @@ subjects:
     name: traefik
     namespace: kube-system
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: traefik
-  namespace: kube-system
-  labels:
-    app.kubernetes.io/name: traefik
-    helm.sh/chart: traefik-9.18.2
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: traefik
-data:
-  traefik.yml: |
-    # traefik.yml
-    global:
-      checkNewVersion: true
-    accessLog: {}
-    api:
-      dashboard: true
-    log:
-      level: DEBUG
-      format: common
-    entryPoints:
-      http:
-        address: ":8000"
-        http:
-          redirections:
-            entrypoint:
-              to: ":443"
-              scheme: https
-      https:
-        address: ":8443"
-        http:
-          tls:
-            certResolver: lestaging
-      traefik:
-        address: ":9000"
-    certificatesResolvers:
-      lestaging:
-        acme:
-          caserver: https://acme-staging-v02.api.letsencrypt.org/directory
-          email: minnaker@armory.io
-          storage: /data/acme-staging.json
-          tlsChallenge: {}
-      leprod:
-        acme:
-          caserver: https://acme-v02.api.letsencrypt.org/directory
-          email: minnaker@armory.io
-          storage: /data/acme.json
-          tlsChallenge: {}
-    tls:
-      certificates:
-        - certFile: /data/tls.crt
-          keyFile: /data/tls.key
-      options:
-        default:
-          minVersion: VersionTLS12
-        mintls13:
-          minVersion: VersionTLS13
-    metrics:
-      prometheus: {}
-    ping: {}
-    providers:
-      kubernetesCRD: {}
-      kubernetesIngress:
-        ingressEndpoint:
-          publishedService: "kube-system/traefik"
----
 # Source: traefik/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -340,6 +273,9 @@ spec:
         - name: "https"
           protocol: "TCP"
           containerPort: 8443
+        - name: "metrics"
+          protocol: "TCP"
+          containerPort: 8100
         securityContext:
           capabilities:
             drop:
@@ -403,6 +339,10 @@ items:
       - port: 9000
         name: traefik
         targetPort: "traefik"
+        protocol: "TCP"
+      - port: 8100
+        name: metrics
+        targetPort: "metrics"
         protocol: "TCP"
 ---
 # Source: traefik/templates/dashboard-hook-ingressroute.yaml
