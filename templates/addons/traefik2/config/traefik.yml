@@ -1,0 +1,58 @@
+global:
+  checkNewVersion: true
+accessLog: {}
+api:
+  dashboard: true
+log:
+  level: DEBUG
+  format: common
+entryPoints:
+  http:
+    address: ":8000"
+    http:
+      redirections:
+        entrypoint:
+          to: ":443"
+          scheme: https
+  https:
+    address: ":8443"
+    http:
+      tls:
+        certResolver: lestaging
+        domains:
+          - main: "54.225.84.77.nip.io"
+  metrics:
+    address: ":8100"
+  traefik:
+    address: ":9000"
+certificatesResolvers:
+  lestaging:
+    acme:
+      caserver: https://acme-staging-v02.api.letsencrypt.org/directory
+      email: minnaker@armory.io
+      storage: /data/acme-staging.json
+      tlsChallenge: {}
+  leprod:
+    acme:
+      caserver: https://acme-v02.api.letsencrypt.org/directory
+      email: minnaker@armory.io
+      storage: /data/acme.json
+      tlsChallenge: {}
+tls:
+  certificates:
+    - certFile: /data/tls.crt
+      keyFile: /data/tls.key
+  options:
+    default:
+      minVersion: VersionTLS12
+    mintls13:
+      minVersion: VersionTLS13
+metrics:
+  prometheus:
+    entrypoint: metrics
+ping: {}
+providers:
+  kubernetesCRD: {}
+  kubernetesIngress:
+    ingressEndpoint:
+      publishedService: "kube-system/traefik"
