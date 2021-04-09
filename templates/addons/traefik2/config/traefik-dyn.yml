@@ -1,0 +1,17 @@
+http:
+  # Add the router
+  routers:
+    router0:
+      entryPoints:
+      - http
+      redirections:
+        entrypoint:
+          to: ":443"
+          scheme: https
+    router1:
+      entryPoints:
+      - https
+      tls:
+        certResolver: lestaging
+        domains:
+        - main: "54.225.84.77.nip.io"
