@@ -1,17 +1,50 @@
 http:
   # Add the router
   routers:
-    router0:
+    http_catchall:
       entryPoints:
-      - http
-      redirections:
-        entrypoint:
-          to: ":443"
-          scheme: https
+        - http
+      middlewares:
+        - https_redirect
+      rule: "HostRegexp(`{any:.+}`)"
+      service: noop
+
     router1:
       entryPoints:
-      - https
+        - https
       tls:
         certResolver: lestaging
         domains:
-        - main: "54.225.84.77.nip.io"
+          - main: 52.4.34.116.nip.io
+            sans:
+              - spinnaker.52.4.34.116.nip.io
+              - api.52.4.34.116.nip.io
+              - alertmanager.52.4.34.116.nip.io
+              - prometheus.52.4.34.116.nip.io
+              - grafana.52.4.34.116.nip.io
+              - jenkins.52.4.34.116.nip.io
+              - ldap.52.4.34.116.nip.io
+              - consul.52.4.34.116.nip.io
+              - vault.52.4.34.116.nip.io
+  services:
+    # noop service, the URL will be never called
+    noop:
+      loadBalancer:
+        servers:
+          - url: http://192.168.0.1:1337
+
+  middlewares:
+    https_redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+tls:
+  certificates:
+    - certFile: /data/tls.crt
+      keyFile: /data/tls.key
+  options:
+    default:
+      minVersion: VersionTLS12
+    mintls13:
+      minVersion: VersionTLS13      

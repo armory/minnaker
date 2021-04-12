@@ -126,15 +126,6 @@ data:
           email: minnaker@armory.io
           storage: /data/acme.json
           tlsChallenge: {}
-    tls:
-      certificates:
-        - certFile: /data/tls.crt
-          keyFile: /data/tls.key
-      options:
-        default:
-          minVersion: VersionTLS12
-        mintls13:
-          minVersion: VersionTLS13
     metrics:
       prometheus:
         entrypoint: metrics
