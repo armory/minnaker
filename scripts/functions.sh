@@ -75,7 +75,8 @@ install_k3s () {
 install_traefik2 () {
   info "--- Installing Traefik v2 ---"
   exec_kubectl_mutating "kubectl apply -f ${PROJECT_DIR}/templates/addons/traefik2/config/traefik2-crds.yml" handle_generic_kubectl_error
-  exec_kubectl_mutating "kubectl kustomize ${PROJECT_DIR}/templates/addons/traefik2 | kubectl apply -f -" handle_generic_kubectl_error
+  kubectl kustomize ${PROJECT_DIR}/templates/addons/traefik2 | tee ${PROJECT_DIR}/templates/addons/traefik2/traefik2-install.yml
+  exec_kubectl_mutating "kubectl apply -f ${PROJECT_DIR}/templates/addons/traefik2/traefik2-install.yml" handle_generic_kubectl_error
   yq d -i ${BASE_DIR}/expose/ingress-traefik.yml metadata.annotations.traefik*
   yq w -i ${BASE_DIR}/expose/ingress-traefik.yml 'metadata.annotations.(traefik.ingress.kubernetes.io/router.entrypoints)' https
   yq w -i ${BASE_DIR}/expose/ingress-traefik.yml 'metadata.annotations.(traefik.ingress.kubernetes.io/router.tls.certresolver)' lestaging
