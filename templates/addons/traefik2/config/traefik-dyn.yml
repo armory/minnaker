@@ -3,20 +3,28 @@ http:
   routers:
     http_catchall:
       entryPoints:
-        - http
+        - web
       middlewares:
         - https_redirect
       rule: "HostRegexp(`{any:.+}`)"
       service: noop
-
     router1:
       entryPoints:
-        - https
+        - websecure
       tls:
         certResolver: lestaging
         domains:
           - main: 52.4.34.116.nip.io
             sans:
+              - spinnaker.52.4.34.116.nip.io
+              - api.52.4.34.116.nip.io
+              - alertmanager.52.4.34.116.nip.io
+              - prometheus.52.4.34.116.nip.io
+              - grafana.52.4.34.116.nip.io
+              - jenkins.52.4.34.116.nip.io
+              - ldap.52.4.34.116.nip.io
+              - consul.52.4.34.116.nip.io
+              - vault.52.4.34.116.nip.io
               - spinnaker.52.4.34.116.nip.io
               - api.52.4.34.116.nip.io
               - alertmanager.52.4.34.116.nip.io
@@ -32,13 +40,11 @@ http:
       loadBalancer:
         servers:
           - url: http://192.168.0.1:1337
-
   middlewares:
     https_redirect:
       redirectScheme:
         scheme: https
         permanent: true
-
 tls:
   certificates:
     - certFile: /data/tls.crt
@@ -47,4 +53,4 @@ tls:
     default:
       minVersion: VersionTLS12
     mintls13:
-      minVersion: VersionTLS13      
+      minVersion: VersionTLS13

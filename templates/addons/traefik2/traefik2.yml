@@ -105,9 +105,9 @@ data:
       level: INFO
       format: common
     entryPoints:
-      http:
+      web:
         address: ":8000"
-      https:
+      websecure:
         address: ":8443"
       metrics:
         address: ":8100"
@@ -201,10 +201,10 @@ spec:
         - name: "traefik"
           containerPort: 9000
           protocol: "TCP"
-        - name: "http"
+        - name: "web"
           protocol: "TCP"
           containerPort: 8000
-        - name: "https"
+        - name: "websecure"
           protocol: "TCP"
           containerPort: 8443
         - name: "metrics"
@@ -268,12 +268,12 @@ items:
         app.kubernetes.io/instance: traefik
       ports:
       - port: 80
-        name: http
-        targetPort: "http"
+        name: web
+        targetPort: "web"
         protocol: "TCP"
       - port: 443
-        name: https
-        targetPort: "https"
+        name: websecure
+        targetPort: "websecure"
         protocol: "TCP"
       - port: 9000
         name: traefik
