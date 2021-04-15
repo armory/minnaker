@@ -144,7 +144,7 @@ update_endpoint () {
     PUBLIC_ENDPOINT="spinnaker.$(cat "${BASE_DIR}/secrets/public_ip").nip.io"   # use nip.io which is a DNS that will always resolve.
     info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
     # domain[0].main cannot be spinnaker since it's not up yet
-    yq w -i ${PROJECT_DIR}/templates/addons/traefik2/config/traefik-dyn.yml 'http.routers.router1.tls.domains[0].main' ${PUBLIC_ENDPOINT#spinnaker.}
+    yq w -i ${PROJECT_DIR}/templates/addons/traefik2/config/traefik2-config.yml 'entryPoints.https.http.tls.domains[0].main' ${PUBLIC_ENDPOINT#spinnaker.}
     yq w -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
   else
     PUBLIC_ENDPOINT="$(cat "${BASE_DIR}/secrets/public_ip")" 

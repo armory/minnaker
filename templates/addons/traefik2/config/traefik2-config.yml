@@ -20,26 +20,7 @@ entryPoints:
       tls:
         certResolver: lestaging
         domains:
-          - main: "54.225.84.77.nip.io"
-            sans:
-              - spinnaker.54.225.84.77.nip.io
-              - api.54.225.84.77.nip.io
-              - alertmanager.54.225.84.77.nip.io
-              - prometheus.54.225.84.77.nip.io
-              - grafana.54.225.84.77.nip.io
-              - jenkins.54.225.84.77.nip.io
-              - ldap.54.225.84.77.nip.io
-              - consul.54.225.84.77.nip.io
-              - vault.54.225.84.77.nip.io
-              - spinnaker.54.225.84.77.nip.io
-              - api.54.225.84.77.nip.io
-              - alertmanager.54.225.84.77.nip.io
-              - prometheus.54.225.84.77.nip.io
-              - grafana.54.225.84.77.nip.io
-              - jenkins.54.225.84.77.nip.io
-              - ldap.54.225.84.77.nip.io
-              - consul.54.225.84.77.nip.io
-              - vault.54.225.84.77.nip.io
+          - main: "NIP_DOMAIN"
   metrics:
     address: ":8100"
   traefik:
