@@ -10,9 +10,9 @@ resources:
 
 configMapGenerator:
   # ConfigMap for Traefik dynamic config
-  - name: traefik-dyn
+  - name: traefik
     files:
-      - config/traefik-dyn.yml
+      - config/traefik2-config.yml
 
 generatorOptions:
   disableNameSuffixHash: true

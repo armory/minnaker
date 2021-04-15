@@ -85,60 +85,6 @@ subjects:
     name: traefik
     namespace: kube-system
 ---
-# Source: custom
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: traefik
-  namespace: kube-system
-  labels:
-    app.kubernetes.io/name: traefik
-    app.kubernetes.io/instance: traefik
-data:
-  traefik.yml: |
-    global:
-      checkNewVersion: true
-    accessLog: {}
-    api:
-      dashboard: true
-    log:
-      level: INFO
-      format: common
-    entryPoints:
-      web:
-        address: ":8000"
-      websecure:
-        address: ":8443"
-      metrics:
-        address: ":8100"
-      traefik:
-        address: ":9000"
-    certificatesResolvers:
-      lestaging:
-        acme:
-          caserver: https://acme-staging-v02.api.letsencrypt.org/directory
-          email: minnaker@armory.io
-          storage: /data/acme-staging.json
-          tlsChallenge: {}
-      leprod:
-        acme:
-          caserver: https://acme-v02.api.letsencrypt.org/directory
-          email: minnaker@armory.io
-          storage: /data/acme.json
-          tlsChallenge: {}
-    metrics:
-      prometheus:
-        entrypoint: metrics
-    ping: {}
-    providers:
-      file:
-        directory: /dynconfig
-        watch: true
-      kubernetesCRD: {}
-      kubernetesIngress:
-        ingressEndpoint:
-          publishedService: "kube-system/traefik"
----
 # Source: traefik/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -201,10 +147,10 @@ spec:
         - name: "traefik"
           containerPort: 9000
           protocol: "TCP"
-        - name: "web"
+        - name: "http"
           protocol: "TCP"
           containerPort: 8000
-        - name: "websecure"
+        - name: "https"
           protocol: "TCP"
           containerPort: 8443
         - name: "metrics"
@@ -227,10 +173,8 @@ spec:
             mountPath: /tmp
           - name: config
             mountPath: /config
-          - name: dynconfig
-            mountPath: /dynconfig
         args:
-          - --configfile=/config/traefik.yml
+          - --configfile=/config/traefik2-config.yml
       volumes:
         - name: data
           emptyDir: {}
@@ -240,9 +184,6 @@ spec:
           configMap:
             defaultMode: 420
             name: traefik
-        - name: dynconfig
-          configMap:
-            name: traefik-dyn
       securityContext:
         fsGroup: 65532
 ---
@@ -268,12 +209,12 @@ items:
         app.kubernetes.io/instance: traefik
       ports:
       - port: 80
-        name: web
-        targetPort: "web"
+        name: http
+        targetPort: "http"
         protocol: "TCP"
       - port: 443
-        name: websecure
-        targetPort: "websecure"
+        name: https
+        targetPort: "https"
         protocol: "TCP"
       - port: 9000
         name: traefik
