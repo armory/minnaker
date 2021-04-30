@@ -65,7 +65,7 @@ install_k3s () {
 
 install_yq () {
   info "Installing yq"
-  sudo curl -sfL https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_amd64 -o /usr/local/bin/yq
+  sudo curl -sfL https://github.com/mikefarah/yq/releases/download/v4.7.1/yq_linux_amd64 -o /usr/local/bin/yq
   sudo chmod +x /usr/local/bin/yq
   if [[ ! -e "/usr/local/bin/yq" ]]; then
     error "failed to install yq - please manually install https://github.com/mikefarah/yq/"
@@ -122,11 +122,11 @@ update_endpoint () {
   PUBLIC_ENDPOINT="$(cat "${BASE_DIR}/secrets/public_ip")" 
 
   info "Updating spinsvc templates with new endpoint: ${PUBLIC_ENDPOINT}"
-  #yq w -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host ${PUBLIC_ENDPOINT}
-  yq d -i ${BASE_DIR}/expose/ingress-traefik.yml spec.rules[0].host
-  yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl https://${PUBLIC_ENDPOINT}
-  yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.overrideBaseUrl  https://${PUBLIC_ENDPOINT}/api
-  yq w -i ${BASE_DIR}/expose/patch-urls.yml spec.spinnakerConfig.config.security.apiSecurity.corsAccessPattern  https://${PUBLIC_ENDPOINT}
+  #yq eval -i '.spec.rules[0].host = "'${PUBLIC_ENDPOINT}'"' ${BASE_DIR}/expose/ingress-traefik.yml 
+  yq eval -i 'del(.spec.rules[0].host)' ${BASE_DIR}/expose/ingress-traefik.yml 
+  yq eval -i '.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl = "'https://${PUBLIC_ENDPOINT}'"' ${BASE_DIR}/expose/patch-urls.yml
+  yq eval -i '.spec.spinnakerConfig.config.security.apiSecurity.overrideBaseUrl = "'https://${PUBLIC_ENDPOINT}/api'"' ${BASE_DIR}/expose/patch-urls.yml
+  yq eval -i '.spec.spinnakerConfig.config.security.apiSecurity.corsAccessPattern = "'https://${PUBLIC_ENDPOINT}'"' ${BASE_DIR}/expose/patch-urls.yml
 }
 
 generate_passwords () {
@@ -169,9 +169,9 @@ update_templates_for_auth () {
 hydrate_templates () {
   sed -i "s|^http-password=.*|http-password=${SPINNAKER_PASSWORD}|g" ${BASE_DIR}/secrets/secrets-example.env
   #sed -i "s|username2replace|admin|g" security/patch-basic-auth.yml
-  yq w -i ${BASE_DIR}/security/patch-basic-auth.yml spec.spinnakerConfig.profiles.gate.spring.security.user.name admin
+  yq eval -i '.spec.spinnakerConfig.profiles.gate.spring.security.user.name = "admin"' ${BASE_DIR}/security/patch-basic-auth.yml
   #sed -i -r "s|(^.*)version: .*|\1version: ${VERSION}|" core_config/patch-version.yml
-  yq w -i ${BASE_DIR}/core_config/patch-version.yml spec.spinnakerConfig.config.version ${VERSION}
+  yq eval -i '.spec.spinnakerConfig.config.version = "'${VERSION}'"' ${BASE_DIR}/core_config/patch-version.yml
   sed -i "s|token|# token|g" accounts/git/patch-github.yml
   sed -i "s|username|# username|g" accounts/git/patch-gitrepo.yml
   sed -i "s|token|# token|g" accounts/git/patch-gitrepo.yml
@@ -250,7 +250,7 @@ info "Creating spin_endpoint helper function"
 sudo tee /usr/local/bin/spin_endpoint <<-'EOF'
 #!/bin/bash
 #echo "$(kubectl get spinsvc spinnaker -n spinnaker -ojsonpath='{.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl}')"
-echo "$(yq r BASE_DIR/expose/patch-urls.yml spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl)"
+echo "$(yq e '.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl' BASE_DIR/expose/patch-urls.yml)"
 [[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "username: 'admin'"
 [[ -f BASE_DIR/secrets/spinnaker_password ]] && echo "password: '$(cat BASE_DIR/secrets/spinnaker_password)'"
 EOF
