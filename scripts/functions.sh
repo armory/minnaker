@@ -127,6 +127,7 @@ update_endpoint () {
   yq eval -i '.spec.spinnakerConfig.config.security.uiSecurity.overrideBaseUrl = "'https://${PUBLIC_ENDPOINT}'"' ${BASE_DIR}/expose/patch-urls.yml
   yq eval -i '.spec.spinnakerConfig.config.security.apiSecurity.overrideBaseUrl = "'https://${PUBLIC_ENDPOINT}/api'"' ${BASE_DIR}/expose/patch-urls.yml
   yq eval -i '.spec.spinnakerConfig.config.security.apiSecurity.corsAccessPattern = "'https://${PUBLIC_ENDPOINT}'"' ${BASE_DIR}/expose/patch-urls.yml
+}
 
 generate_passwords () {
   # for PASSWORD_ITEM in spinnaker_password minio_password mysql_password; do
