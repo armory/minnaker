@@ -52,7 +52,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 2. Download the minnaker tarball and untar:
 
     ```bash
-    curl -L https://github.com/armory/minnaker/archive/v0.1.2.tar.gz | tar -zxv
+    curl -L https://github.com/armory/minnaker/archive/v0.1.3.tar.gz | tar -zxv
     ```
 
 3. Change into the directory:
