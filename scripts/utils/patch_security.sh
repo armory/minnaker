@@ -16,17 +16,18 @@
 # limitations under the License.
 ################################################################################
 
-set -e
+function disable_security() {
+  local YAML_FILE=$BASE_DIR/security/patch-basic-auth.yml
+  info 'Disable gate security'
+  yq e -i '.spec.spinnakerConfig.profiles.gate.security.basicform.enabled=false' $YAML_FILE
+  yq e -i 'del(.spec.spinnakerConfig.profiles.gate.spring.security)' $YAML_FILE
+  info 'File '$YAML_FILE' was patched'
+}
 
-# Linux only
-
-PROJECT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" >/dev/null 2>&1 && pwd )
-KUBERNETES_CONTEXT=default
-NAMESPACE=spinnaker
-BASE_DIR=/etc/spinnaker
-
-mv ${BASE_DIR}/.hal/.secret/spinnaker_password ${BASE_DIR}/.hal/.secret/spinnaker_password_removed
-yq d -i ${BASE_DIR}/.hal/default/profiles/gate-local.yml security
-sed -i 's|^window.spinnakerSettings.authEnabled|# window.spinnakerSettings.authEnabled|g' ${BASE_DIR}/.hal/default/profiles/settings-local.js
-
-kubectl --context ${KUBERNETES_CONTEXT} -n ${NAMESPACE} exec -i halyard-0 -- sh -c "hal deploy apply"
+function enable_security() {
+    local YAML_FILE=$BASE_DIR/security/patch-basic-auth.yml
+    info 'Enable gate security'
+    yq e -i '.spec.spinnakerConfig.profiles.gate.security.basicform.enabled=true' $YAML_FILE
+    yq e -i --prettyPrint '.spec.spinnakerConfig.profiles.gate.spring={"security": {"user": {"name":"admin", "password":"123"}}}' $YAML_FILE
+    info 'File '$YAML_FILE' was patched'
+}
