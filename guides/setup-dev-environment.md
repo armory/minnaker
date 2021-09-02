@@ -132,7 +132,7 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
    ./minnaker/scripts/utils/external_service_setup.sh orca echo
    ```
 
-9. [host] Setup your host config files 
+9. [host] Setup your host config files
    - Create/edit the file `~/.spinnaker/spinnaker-local.yml`, and paste the previously copied output.
     ```
     services:
@@ -196,7 +196,7 @@ Open two terminals one will be for shell access into minnaker-vm the other will 
 
 14. Open your project
 
-    * If you don't have a project open, you'll see a "Welcome to IntellJ IDEA".
+    * If you don't have a project open, you'll see a "Welcome to IntelliJ IDEA".
 
         1. Click "Open or Import"
 
