@@ -577,7 +577,7 @@ Spinnaker has a native capability to perform this latter option.  This is what w
 
 In Kubernetes, Deployments can be used to handle the rollouts of your application: if you have version A of your application, and want to update it to version B of your application, you update your Deployment specification and Kubernetes will handle creating / updating the ReplicaSets to handle the upgrade in a rolling fashion.
 
-Spinnaker is able to directly use this mechanism, and when you use Spinnaker to create Deployments, your pods will follow whatever pattern Kuberntes uses to meet your Kubernetes Deployment pattern.  Spinnaker also adds annotations to be able to roll back to previous iterations (we'll see this later on).
+Spinnaker is able to directly use this mechanism, and when you use Spinnaker to create Deployments, your pods will follow whatever pattern Kubernetes uses to meet your Kubernetes Deployment pattern.  Spinnaker also adds annotations to be able to roll back to previous iterations (we'll see this later on).
 
 If we want more control of our application rollout - for example to do a Blue/Green deployment - then Spinnaker can also directly interact with Kubernetes ReplicaSets.  Then, if we add the proper annotations to our ReplicaSets to indicate what Service they *should* be dynamically attached to / detached from, then Spinnaker will do the following:
 
@@ -796,7 +796,7 @@ Be aware of these things when setting up webhook triggers:
 * You can have multiple webhook triggers for a given pipeline.
 * You can inject additional metadata into the pipeline that isn't exposed through a parameter, through additional fields in the trigger.  All fields in the triggering webhook will be available for usage in the pipeline through SpEL.
 
-## Triggering a pipeline without a wehook trigger, with a webhook
+## Triggering a pipeline without a webhook trigger, with a webhook
 
 In addition to the above trigger, every time you click "Start Manual Execution" through the Spinnaker UI, your browser is making an API call, acting as you, to the Spinnaker (Gate) API.  You can use the same API to trigger pipelines in an authenticated manner.
 

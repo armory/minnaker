@@ -15,7 +15,7 @@ Minnaker performs the following actions when run on a single Linux instance:
 * Installs and configures **[Spinnaker](https://github.com/spinnaker)** or **[Armory](https://armory.io)** using the **Spinnaker Operator**.
 * Exposes Spinnaker using an Ingress.  NOTE: If you're using an AWS EC2 instance, make sure you add port 443 to the security group.
 * Minnaker uses local authentication. The username is `admin` and the password is randomly generated when you install Minnaker. Find more details about getting the password in [Accessing Spinnaker](#accessing-spinnaker).
-* For the full list of customizations and configurations - please check out the [kustomization-minnaker.yml] (https://github.com/armory/spinnaker-kustomize-patches/blob/minnaker/recipes/kustomization-minnaker.yml) file.
+* For the full list of customizations and configurations - please check out the [`kustomization-minnaker.yml`](https://github.com/armory/spinnaker-kustomize-patches/blob/minnaker/recipes/kustomization-minnaker.yml) file.
 
 ## Requirements
 
@@ -38,7 +38,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 
 ## Changelog
 
-* 2/XX/2021 - Major update - install.sh has been replaced to use the spinnaker operator as the default installation method.  Todo: Many of the convience scripts will also need to be updated to use the operator as well.  If you would still like to use Halyard - please reference [Release 0.0.23](https://github.com/armory/minnaker/releases/tag/0.0.22)
+* 2/XX/2021 - Major update - install.sh has been replaced to use the spinnaker operator as the default installation method.  Todo: Many of the convenience scripts will also need to be updated to use the operator as well.  If you would still like to use Halyard - please reference [Release 0.0.23](https://github.com/armory/minnaker/releases/tag/0.0.22)
   * operator_install.sh replaces install.sh
   * removing operator_install.sh
   * ToDo: Clean up all other scripts to remove dependency on halyard.
@@ -66,9 +66,9 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
      * By default, the script installs Armory Spinnaker and uses your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.
      * For bare metal or a local VM, specify the IP address for your server with `-P` flag. `-P` is the 'Public Endpoint' and must be an address or DNS name you will use to access Spinnaker (an IP address reachable by your end users).
 
-    ```bash
-    ./scripts/install.sh
-    ```
+        ```bash
+        ./scripts/install.sh
+        ```
     
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
@@ -119,7 +119,7 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
 1. SSH into the machine where you have installed Spinnaker
 2. Modify the contents of `~/spinnaker/spinsvc/kustomization.yml` and the associated patch files. 
 
-** PRO TIP: Use [VS Code - Remote SSH extension](https://code.visualstudio.com/docs/remote/ssh) to interact with your minnaker instance, and manage and edit multiple files **
+** PRO TIP: Use [VS Code - Remote SSH extension](https://code.visualstudio.com/docs/remote/ssh) to interact with your Minnaker instance, and manage and edit multiple files **
 
     See [Armory's Spinnaker Operator] (https://docs.armory.io/docs/installation/operator/).
     
@@ -137,7 +137,7 @@ Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 To learn more about the Spinnaker Operator check out the docs here: https://docs.armory.io/docs/installation/operator/
 
-Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spinnaker-kustomize-patches#kustomize-patches-for-armory) repo
+Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spinnaker-kustomize-patches#kustomize-patches-for-armory) repo.
 
 ## Details
 
@@ -301,7 +301,7 @@ $ kubectl -n spinnaker logs -f spin-gate-75c99f6b9d-fcgth
 ```
 
 ## Uninstalling K3s
-* This will kill your kubernetes cluster: `/usr/local/bin/k3s-killall.sh`
+* This will kill your Kubernetes cluster: `/usr/local/bin/k3s-killall.sh`
 
 ## Uninstall Minnaker for OSX
 * Delete the `spinnaker` and `spinnaker-operator` namespace.  

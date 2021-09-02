@@ -10,7 +10,7 @@ Then, we'll build out the process to do the following:
 * Jenkins build a Docker image
 * Jenkins push the Docker image to ECR (alternately, to Docker Hub)
 * Jenkins send a webhook to Spinnaker to trigger a Spinnaker pipeline, with a Docker image artifact
-* Spinnaker receive the webhook, pull a Kubernets manifest from GitHub, hydrate the Docker image, and deploy the manifest to a Kubernetes cluster
+* Spinnaker receive the webhook, pull a Kubernetes manifest from GitHub, hydrate the Docker image, and deploy the manifest to a Kubernetes cluster
 
 We assume the following in this document:
 * You have the following set up and configured:
@@ -82,7 +82,7 @@ Then, using Halyard, add the credential to Spinnaker as "GitHub artifact Account
 
 Assuming Jenkins is running in a different AWS account from your ECR repository, you'll need to set up cross-account access.
 
-* Get the AWS account ID for the AWS account where Jenkins is running (you can use the command `aws sts get-caller-identity` to see what account you're accesssing from; for example, an ARN of `arn:aws:sts::222233334444:assumed-role/ec2-role/i-00001111222233334` means you're in `222233334444`)
+* Get the AWS account ID for the AWS account where Jenkins is running (you can use the command `aws sts get-caller-identity` to see what account you're accessing from; for example, an ARN of `arn:aws:sts::222233334444:assumed-role/ec2-role/i-00001111222233334` means you're in `222233334444`)
 * Log into to the AWS console account where your ECR repository exists, and go to Compute > ECR
 * Click on your repository
 * On the left side, click on "Permissions"
