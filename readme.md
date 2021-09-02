@@ -137,7 +137,7 @@ Alternatively, take a look at the available Minnaker [guides](/guides/).
 
 To learn more about the Spinnaker Operator check out the docs here: https://docs.armory.io/docs/installation/operator/
 
-Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spinnaker-kustomize-patches#kustomize-patches-for-armory) repo
+Also check out the [`spinnaker-kustomize-patches`](https://github.com/armory/spinnaker-kustomize-patches#kustomize-patches-for-armory) repo.
 
 ## Details
 
@@ -301,7 +301,7 @@ $ kubectl -n spinnaker logs -f spin-gate-75c99f6b9d-fcgth
 ```
 
 ## Uninstalling K3s
-* This will kill your kubernetes cluster: `/usr/local/bin/k3s-killall.sh`
+* This will kill your Kubernetes cluster: `/usr/local/bin/k3s-killall.sh`
 
 ## Uninstall Minnaker for OSX
 * Delete the `spinnaker` and `spinnaker-operator` namespace.  
