@@ -66,9 +66,9 @@ To use Minnaker, make sure your Linux instance meets the following requirements:
      * By default, the script installs Armory Spinnaker and uses your public IP address (determined by `curl`ing `ifconfig.co`) as the endpoint for Spinnaker.
      * For bare metal or a local VM, specify the IP address for your server with `-P` flag. `-P` is the 'Public Endpoint' and must be an address or DNS name you will use to access Spinnaker (an IP address reachable by your end users).
 
-    ```bash
-    ./scripts/install.sh
-    ```
+        ```bash
+        ./scripts/install.sh
+        ```
     
     For example, the following command installs OSS Spinnaker on a VM with the IP address of `192.168.10.1`:
 
